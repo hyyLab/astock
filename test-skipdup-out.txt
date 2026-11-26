@@ -1,0 +1,25 @@
+﻿FULL ERR:
+
+Invalid `db.dailyStock.createMany()` invocation in
+F:\astock-src\test-skipdup.cjs:3:15
+
+  1 const { PrismaClient } = require('@prisma/client');
+  2 const db = new PrismaClient();
+→ 3 db.dailyStock.createMany({
+      data: [
+        {
+          tradeDate: "2026-11-24",
+          stockCode: "TEST001",
+          open: 1,
+          high: 1,
+          low: 1,
+          close: 1,
+          changePct: 0,
+          volume: 1
+        }
+      ],
+      skipDuplicates: true
+      ~~~~~~~~~~~~~~
+    })
+
+Unknown argument `skipDuplicates`. Available options are marked with ?.

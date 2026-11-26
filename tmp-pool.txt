@@ -1,0 +1,7 @@
+联合化学|0.301209|open=43.81 high=45.30 low=43.12 close=43.88 prevClose=47.69
+红 宝 丽|0.002165|open=6.68 high=7.16 low=6.63 close=6.91 prevClose=6.91
+怡达股份|0.300721|open=20.60 high=21.29 low=20.00 close=20.71 prevClose=21.75
+宝鼎科技|0.002552|open=27.22 high=28.58 low=27.20 close=27.93 prevClose=28.00
+中毅达|1.600610|open=6.23 high=6.50 low=6.18 close=6.30 prevClose=6.19
+沃格光电|1.603773|open=46.95 high=48.62 low=46.69 close=47.28 prevClose=48.04
+胜宏科技|0.300476|open=116.55 high=128.99 low=116.55 close=125.99 prevClose=122.32

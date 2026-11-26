@@ -1,0 +1,40 @@
+import type { Metadata } from "next";
+import { Inter, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import { Toaster } from "@/components/ui/toaster";
+import { ThemeProvider } from "@/components/lb/ThemeProvider";
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "连板复盘 · 涨停连板题材情绪市场复盘平台",
+  description:
+    "涨停池、连板天梯、主线题材、情绪指标、昨日涨停表现与历史复盘——自建数据链路的 A 股复盘平台。",
+  keywords: ["涨停", "连板", "连板天梯", "题材", "情绪指标", "复盘", "A股"],
+  icons: {
+    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="zh-CN" suppressHydrationWarning>
+      <body className={`${inter.variable} ${geistMono.variable} antialiased`}>
+        <ThemeProvider>{children}</ThemeProvider>
+        <Toaster />
+      </body>
+    </html>
+  );
+}

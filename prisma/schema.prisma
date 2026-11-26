@@ -1,0 +1,331 @@
+// ============================================================
+// 连板复盘数据平台 · 数据层 Schema
+// 对应开发方案「第六步：建立数据库」
+// 龙虎榜(dragon_tiger / dragon_tiger_seat)属第三阶段，暂不建模
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 1. stock_basic 股票基础信息
+model StockBasic {
+  id          Int      @id @default(autoincrement())
+  stockCode   String   @unique
+  stockName   String
+  market      String // SH | SZ | BJ
+  industry    String? // 行业分类（来自涨停池 hybk 字段，动态采集而非硬编码）
+  nameAbbr    String? // 名称拼音首字母（搜索用，如 平潭发展→PTFZ，合富中国→HFZG）
+  listingDate String?
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 2. daily_market 每日市场数据
+model DailyMarket {
+  id             Int      @id @default(autoincrement())
+  tradeDate      String   @unique // YYYY-MM-DD
+  shIndex        Float? // 上证指数收盘
+  shChangePct    Float?
+  szIndex        Float? // 深证成指
+  szChangePct    Float?
+  cyIndex        Float? // 创业板指
+  cyChangePct    Float?
+  kcIndex        Float? // 科创50
+  kcChangePct    Float?
+  sz50Index      Float? // 上证50
+  sz50ChangePct  Float?
+  bz50Index      Float? // 北证50
+  bz50ChangePct  Float?
+  totalAmount    Float? // 两市成交额（亿元）
+  upCount        Int? // 上涨家数（仅最近交易日有全市场快照）
+  downCount      Int?
+  flatCount      Int?
+  limitUpCount   Int // 涨停数量
+  limitDownCount Int // 跌停数量
+  brokenCount    Int // 炸板数量
+  sealRate       Float? // 封板率 = 涨停数 / (涨停数 + 炸板数)
+  dataSource     String   @default("eastmoney+qq")
+  createdAt      DateTime @default(now())
+}
+
+// 3. daily_stock 每日股票行情（当前仅入库涨停/炸板/跌停相关股票的日K，避免全市场冗余）
+model DailyStock {
+  id             Int     @id @default(autoincrement())
+  tradeDate      String
+  stockCode      String
+  open           Float
+  high           Float
+  low            Float
+  close          Float
+  prevClose      Float?
+  changePct      Float
+  volume         Float // 手
+  amount         Float? // 元（历史日为估算值，最近交易日为精确值）
+  turnoverRate   Float?
+  floatMarketCap Float?
+  volumeRatio    Float? // 量比 = 当日成交量 / 前20日均量（爆量体系核心字段）
+  isLimitUp      Boolean @default(false)
+  isLimitDown    Boolean @default(false)
+  isBroken       Boolean @default(false) // 曾触及涨停但未封住
+  @@unique([tradeDate, stockCode])
+  @@index([stockCode])
+}
+
+// 4. limit_up 涨停数据
+model LimitUp {
+  id             Int     @id @default(autoincrement())
+  tradeDate      String
+  stockCode      String
+  stockName      String
+  limitPrice     Float // 涨停价
+  closePrice     Float // 收盘价（涨停股收盘=涨停价）
+  changePct      Float
+  firstLimitTime String? // 首次涨停时间 HH:MM:SS
+  lastLimitTime  String? // 最终涨停时间 HH:MM:SS
+  openCount      Int // 炸板次数
+  sealAmount     Float? // 封单资金（元）
+  amount         Float? // 成交额（元）
+  turnoverRate   Float?
+  floatMarketCap Float? // 流通市值（元）
+  industry       String? // 所属行业/题材
+  boardCount     Int // 自主计算的连板高度（核心：不信任数据源）
+  volumeRatio    Float? // 量比 = 当日成交量 / 前20日均量
+  sourceBoard    Int? // 数据源参考连板数（交叉验证）
+  daysAndBoards  String? // 几天几板，如 "5天4板"
+  isPromotion    Boolean @default(false) // 是否晋级（昨日N板→今日N+1板）
+  isRebound      Boolean @default(false) // 是否反包（断板后再度涨停）
+  themes         String? // JSON: 主线题材标签数组（规则归组，可跨行业，如 ["福建概念","医药"]）
+  themeEvidence  String? // JSON: 新闻归类证据 [{theme,hits,title,media,time}]（个股新闻命中主线关键词）
+  @@unique([tradeDate, stockCode])
+  @@index([stockCode])
+}
+
+// 5. board_history 连板历史（自主保留可追溯的每日状态）
+model BoardHistory {
+  id                 Int     @id @default(autoincrement())
+  tradeDate          String
+  stockCode          String
+  stockName          String
+  boardCount         Int // 当前连板数，0 表示当日断板
+  previousBoardCount Int
+  isPromotion        Boolean
+  isBreak            Boolean // 昨日涨停今日未涨停 => 断板
+  isRebound          Boolean // 前日涨停、昨日断板、今日再涨停
+  @@unique([tradeDate, stockCode])
+  @@index([stockCode])
+}
+
+// 6. concept 题材表（第一版题材=行业板块，由数据源动态获取）
+model Concept {
+  id          Int            @id @default(autoincrement())
+  conceptName String         @unique
+  conceptCode String?
+  description String?
+  stocks      StockConcept[]
+}
+
+// 7. stock_concept 股票与题材关联
+model StockConcept {
+  id        Int     @id @default(autoincrement())
+  stockCode String
+  concept   Concept @relation(fields: [conceptId], references: [id])
+  conceptId Int
+  source    String  @default("eastmoney-hybk")
+  weight    Float   @default(1)
+  @@unique([stockCode, conceptId])
+  @@index([conceptId])
+}
+
+// 8. daily_concept 每日题材统计（双层：industry=行业细分 / theme=主线题材规则归组）
+model DailyConcept {
+  id            Int     @id @default(autoincrement())
+  tradeDate     String
+  conceptName   String
+  kind          String  @default("industry") // industry | theme
+  limitUpCount  Int // 题材内涨停数量
+  boardCount    Int // 题材内连板股票数
+  highestBoard  Int // 题材内最高连板
+  brokenCount   Int // 题材内炸板数量
+  totalAmount   Float? // 题材内涨停股成交额（亿元）
+  leaderCode    String? // 龙头代码（规则生成：最高板>首封时间最早>成交额最大）
+  leaderName    String?
+  strengthScore Float // 强度分 0-100
+  heatScore     Float? // 热度分 0-100
+  members       String? // JSON: theme 行的成分股明细 [{code,name,industry,boardCount}]
+  @@unique([tradeDate, conceptName, kind])
+}
+
+// 9. sentiment_daily 每日情绪
+model SentimentDaily {
+  id                   Int     @id @default(autoincrement())
+  tradeDate            String  @unique
+  limitUpCount         Int
+  limitDownCount       Int
+  brokenLimitCount     Int
+  sealRate             Float // 封板率 0-1
+  brokenRate           Float // 炸板率 0-1
+  highestBoard         Int // 市场最高连板
+  yesterdayLimitAvg    Float? // 昨日涨停股今日平均涨跌幅 %
+  yesterdayCount       Int? // 昨日涨停股总数
+  yesterdayRedCount    Int? // 昨日涨停股今日红盘数
+  promotionDetails     String? // JSON: [{"level":"2进3","total":4,"promoted":2,"rate":0.5}]
+  sentimentTemperature Float // 情绪温度 0-100（自有透明算法）
+  sentimentStage       String // 冰点/修复/升温/高潮/极强
+  upCount              Int?
+  downCount            Int?
+}
+
+// 10. broken_limit 炸板股票（方案之外补充表：封板率与题材炸板统计需要明细）
+model BrokenLimit {
+  id             Int     @id @default(autoincrement())
+  tradeDate      String
+  stockCode      String
+  stockName      String
+  limitPrice     Float // 曾到达的涨停价
+  closePrice     Float
+  changePct      Float
+  firstLimitTime String? // 首次封板时间
+  openCount      Int // 炸板次数
+  amount         Float?
+  turnoverRate   Float?
+  floatMarketCap Float?
+  industry       String?
+  volumeRatio    Float? // 量比 = 当日成交量 / 前20日均量
+  @@unique([tradeDate, stockCode])
+  @@index([stockCode])
+}
+
+// 11. limit_down 跌停股票（方案之外补充表）
+model LimitDown {
+  id             Int     @id @default(autoincrement())
+  tradeDate      String
+  stockCode      String
+  stockName      String
+  limitPrice     Float // 跌停价
+  closePrice     Float
+  changePct      Float
+  brokeCount     Int? // 开板次数
+  continuousDays Int? // 连续跌停天数
+  amount         Float?
+  industry       String?
+  @@unique([tradeDate, stockCode])
+  @@index([stockCode])
+}
+
+// 12. volume_surge 爆量榜（含非涨停标的；量比=当日成交量/20日均量，≥2 入选）
+model VolumeSurge {
+  id             Int     @id @default(autoincrement())
+  tradeDate      String
+  stockCode      String
+  stockName      String
+  close          Float
+  changePct      Float
+  volumeRatio    Float // 20日口径量比（与涨停池同一算法）
+  amount         Float?
+  turnoverRate   Float?
+  floatMarketCap Float?
+  industry       String?
+  themes         String? // JSON: 主线题材标签
+  isLimitUp      Boolean @default(false)
+  isBroken       Boolean @default(false)
+  position       String // low | mid | high（按距60日高点回撤划分，规则透明）
+  distFromHigh60 Float? // 收盘距60日最高点回撤 %（≥0）
+  distFromLow60  Float? // 收盘距60日最低点涨幅 %
+  @@unique([tradeDate, stockCode])
+  @@index([tradeDate])
+}
+
+// 13. news_item 主线追踪资讯（新浪 7x24 快讯 + 个股新闻 + 规则研判）
+model NewsItem {
+  id        Int     @id @default(autoincrement())
+  extId     String  @unique // 数据源消息 id（去重）
+  pubTime   String // YYYY-MM-DD HH:mm:ss
+  content   String
+  source    String  @default("sina-7x24")
+  kind      String  @default("flash") // flash=7x24快讯 | stock=个股新闻（东财搜索，题材归类证据源）
+  impact    String  @default("none") // good | bad | none（关键词规则研判，非投资建议）
+  themes    String? // JSON: 命中的主线题材名（个股新闻=新闻命中 ∪ 所属股票当日主线）
+  stocks    String? // JSON: 数据源提及股票 [{market,symbol,key}]
+  createdAt DateTime @default(now())
+  @@index([pubTime])
+}
+
+// 15. intraday_snap 盘中采样快照（交易时段定时轮询，异动监控实时数据源）
+// 仅保留有异动价值的股票（|涨幅|≥1% 或 量比≥1.5 或 触板附近 或 前期爆量池），控制体量
+// 保留最近 3 个交易日，收盘后清理（分时细节近期回放够用，日线已入 DailyStock）
+model IntradaySnap {
+  id             Int     @id @default(autoincrement())
+  tradeDate      String // YYYY-MM-DD（北京时间）
+  pollTs         String // HH:MM 采样时刻
+  stockCode      String
+  stockName      String
+  price          Float // 最新价
+  changePct      Float // 当日涨跌幅 %
+  volume         Float // 当日累计成交量（手）
+  amount         Float // 当日累计成交额（元）
+  volumeRatio    Float? // 量比（腾讯实时口径 lb）
+  turnoverRate   Float?
+  floatMarketCap Float?
+  isSealed       Boolean @default(false) // 当前封住涨停
+  touchedLimit   Boolean @default(false) // 盘中曾触板（含已炸）
+  @@unique([tradeDate, pollTs, stockCode])
+  @@index([tradeDate, stockCode])
+  @@index([tradeDate, pollTs])
+}
+
+// 16. intraday_index_snap 指数盘中采样（共振/逆势判定的同期大盘基准）
+model IntradayIndexSnap {
+  id        Int    @id @default(autoincrement())
+  tradeDate String
+  pollTs    String // HH:MM
+  indexCode String // sh000001 / sz399001 / sz399006
+  name      String
+  close     Float
+  changePct Float
+  @@unique([tradeDate, pollTs, indexCode])
+  @@index([tradeDate, pollTs])
+}
+
+// 17. intraday_event 盘中异动事件（时间轴回放 + 事件去重）
+// kind: surge_resonance 共振拉升 | surge_counter 逆势拉升 | surge 快速拉升 |
+//       dive 快速跳水 | seal 封板 | unseal 炸板 | volume 分时爆量
+model IntradayEvent {
+  id          Int      @id @default(autoincrement())
+  tradeDate   String
+  ts          String // HH:MM 事件判定时刻
+  kind        String
+  stockCode   String
+  stockName   String
+  price       Float
+  changePct   Float // 当日涨跌幅 %
+  windowPct   Float? // 窗口涨跌幅 %（拉升/跳水为10分钟，封板/爆量为空）
+  indexPct    Float? // 同期指数窗口涨跌幅 %
+  rsPct       Float? // 窗口相对强度 = 窗口涨幅 - 指数同期
+  volumeRatio Float? // 触发时量比（腾讯口径）
+  themes      String? // JSON: 主线题材标签
+  detail      String? // JSON: 补充信息 {windowMinutes, limitPrice, volumeRatio...}
+  dedupeKey   String @unique // tradeDate|code|kind|10分钟桶（防重复刷屏）
+  createdAt   DateTime @default(now())
+  @@index([tradeDate, ts])
+  @@index([tradeDate, kind])
+}
+
+// 18. collect_log 采集任务日志（运维观测）
+model CollectLog {
+  id           Int      @id @default(autoincrement())
+  ranAt        DateTime @default(now())
+  tradeDates   String // 处理的交易日范围
+  source       String // eastmoney+qq / simulated
+  stockCount   Int // 入库股票数
+  limitUpCount Int // 最新交易日涨停数
+  durationMs   Int
+  status       String // success / failed / partial
+  message      String?
+}
