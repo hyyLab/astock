@@ -72,6 +72,20 @@
 .dark {
   color-scheme: dark;
   --radius: 10px;
+  --radius-tag: 4px;
+  --radius-button: 6px;
+  --radius-card: 10px;
+
+  /* Type scale and spacing scale from the UI spec */
+  --font-size-caption: 12px;
+  --font-size-table: 13px;
+  --font-size-body: 14px;
+  --font-size-module-title: 16px;
+  --font-size-page-title: 22px;
+  --font-size-kpi: 28px;
+  --space-unit: 4px;
+  --panel-padding: 16px;
+  --module-gap: 20px;
 
   --background: #0B0F14;
   --foreground: #E6EDF3;
