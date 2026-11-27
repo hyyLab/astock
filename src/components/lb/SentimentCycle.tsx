@@ -3,15 +3,14 @@
 // 情绪周期模块（需求文档·九）：温度 / 阶段 / 与昨日对比 / 五段刻度尺 / 10日温度趋势
 // 分段口径与后端透明算法一致：0-20冰点 20-40修复 40-60升温 60-80高潮 80+极强
 import type { ReviewBundle } from "./api";
-import { fmtPct, fmtRate, stageColor } from "./format";
-import { useIsDark } from "./theme";
+import { fmtPct, fmtRate } from "./format";
 
 const SEGMENTS = [
-  { label: "冰点", from: 0, to: 20, color: "#2563eb", colorDark: "#5b8def" },
-  { label: "修复", from: 20, to: 40, color: "#0e9663", colorDark: "#0ecb81" },
-  { label: "升温", from: 40, to: 60, color: "#e8850c", colorDark: "#f5a623" },
-  { label: "高潮", from: 60, to: 80, color: "#d9352f", colorDark: "#f6465d" },
-  { label: "极强", from: 80, to: 100, color: "#b91c1c", colorDark: "#f87171" },
+  { label: "冰点", from: 0, to: 20, color: "#52606D" },
+  { label: "修复", from: 20, to: 40, color: "#657384" },
+  { label: "升温", from: 40, to: 60, color: "#7A8794" },
+  { label: "高潮", from: 60, to: 80, color: "#929DA8" },
+  { label: "极强", from: 80, to: 100, color: "#AAB5C0" },
 ];
 
 function tempPos(t: number): number {
@@ -19,7 +18,7 @@ function tempPos(t: number): number {
 }
 
 /** 10日温度趋势（SVG 迷你折线，克制动画） */
-function TempTrend({ bundle, dark }: { bundle: ReviewBundle; dark: boolean }) {
+function TempTrend({ bundle }: { bundle: ReviewBundle }) {
   const h = bundle.history;
   if (h.length < 2) return null;
   const W = 100;
@@ -32,7 +31,7 @@ function TempTrend({ bundle, dark }: { bundle: ReviewBundle; dark: boolean }) {
   });
   const line = pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
   const last = pts[pts.length - 1];
-  const stageClr = stageColor(bundle.sentiment.stage, dark);
+  const stageClr = "var(--primary)";
 
   return (
     <div className="flex items-center gap-2">
@@ -56,12 +55,11 @@ function TempTrend({ bundle, dark }: { bundle: ReviewBundle; dark: boolean }) {
 }
 
 export default function SentimentCycle({ bundle }: { bundle: ReviewBundle }) {
-  const dark = useIsDark();
   const t = bundle.sentiment.temperature;
   const prevT = bundle.prevTemperature;
   const deltaT = prevT != null ? Math.round((t - prevT) * 10) / 10 : null;
   const stage = bundle.sentiment.stage;
-  const clr = stageColor(stage, dark);
+  const clr = "var(--primary)";
   const s = bundle.sentiment;
 
   return (
@@ -105,7 +103,7 @@ export default function SentimentCycle({ bundle }: { bundle: ReviewBundle }) {
                   key={seg.label}
                   style={{
                     width: `${seg.to - seg.from}%`,
-                    backgroundColor: dark ? seg.colorDark : seg.color,
+                    backgroundColor: seg.color,
                     opacity: 0.2,
                     borderRight: "1px solid var(--card)",
                   }}
@@ -137,7 +135,7 @@ export default function SentimentCycle({ bundle }: { bundle: ReviewBundle }) {
           </div>
 
           <div className="mt-1.5">
-            <TempTrend bundle={bundle} dark={dark} />
+            <TempTrend bundle={bundle} />
           </div>
         </div>
       </div>
