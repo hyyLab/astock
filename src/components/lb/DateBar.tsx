@@ -85,7 +85,7 @@ export default function DateBar({ bundle, onNav }: { bundle: DateBarBundle; onNa
               今日 · 盘中
             </span>
           ) : badge === "今日" ? (
-            <span className="rounded-[3px] bg-up-soft px-1.5 py-0.5 text-[11px] font-medium text-up">今日</span>
+            <span className="rounded-[3px] bg-sidebar-accent px-1.5 py-0.5 text-[11px] font-medium text-fg2">今日</span>
           ) : badge === "最新" ? (
             <span className="rounded-[3px] bg-muted px-1.5 py-0.5 text-[11px] font-medium text-fg2">最新</span>
           ) : (
