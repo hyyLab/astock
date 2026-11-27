@@ -12,7 +12,7 @@ export interface RegimeMembershipResult {
 }
 export interface SchedulerState { lastTradeDay:number|null; lastReviewDay:number|null; previousWeights:number[] }
 export interface SchedulerInput {
-  dayIndex:number; regime:RegimeName; probabilities:Record<RegimeName,number>;
+  dayIndex:number; regime:RegimeName|"UNCLASSIFIED"; probabilities:Record<RegimeName,number>;
   /** Legacy/upstream-selected target; used when no confident regime-specific target is supplied. */
   targetWeights:number[];
   /** Optional targets keyed by the already-confirmed regime. */
@@ -119,7 +119,7 @@ export function scheduleRegimeWeights(input:SchedulerInput,options:SchedulerOpti
   const step=options.maxRebalanceStep??options.maxDailyStep??.03;
   const off=options.hardFloorOff??40,shadow=options.hardFloorShadow??60;
   try{
-    const regimeTarget=input.targetWeightsByRegime?.[input.regime];
+    const regimeTarget=input.regime==="UNCLASSIFIED"?undefined:input.targetWeightsByRegime?.[input.regime];
     // A regime-specific target is adopted only when the supplied regime posterior
     // gives the confirmed regime at least 50% membership; otherwise use upstream target.
     const target=regimeTarget&&input.probabilities[input.regime]>=0.5?regimeTarget:input.targetWeights;
@@ -132,20 +132,22 @@ export function scheduleRegimeWeights(input:SchedulerInput,options:SchedulerOpti
     const probabilityValues=REGIMES.map(r=>input.probabilities[r]);
     if(probabilityValues.some(v=>!Number.isFinite(v)||v<0)||
       Math.abs(probabilityValues.reduce((a,b)=>a+b,0)-1)>1e-5||
-      !REGIMES.includes(input.regime))throw new Error("Invalid regime probabilities");
+      (input.regime!=="UNCLASSIFIED"&&!REGIMES.includes(input.regime)))throw new Error("Invalid regime probabilities");
     const stored=input.state.previousWeights;
     if(stored.length!==n||stored.some(v=>!Number.isFinite(v)||v<0)||
       Math.abs(stored.reduce((a,b)=>a+b,0)-1)>1e-5)throw new Error("Invalid previous allocation");
     const previous=stored;
     if(input.independentSegmentSamples<off){
-      // OFF pauses new rebalances; it is not a liquidation instruction. Preserve
-      // the last executed allocation so re-enabling does not imply a hidden reset.
+      // CONTRACT: OFF means “do not execute new trades”, never “liquidate to equal weight”.
+      // Preserve the last actually executed holdings as the anchor; equal-weight reset
+      // would itself be a large, unintended trade and requires an explicit policy.
       return {weights:previous,mode:"OFF",tradeTriggered:false,reviewTriggered:false,
         reason:"独立样本少于 40：暂停调仓，保留上次实际权重",
         state:{...input.state,previousWeights:previous},fallback:false};
     }
     if(input.independentSegmentSamples<shadow||!input.targetBeatsEqualWeight){
-      // SHADOW reviews evidence without executing trades or liquidating.
+      // CONTRACT: SHADOW is non-executing observation, not a liquidation/reset state.
+      // Keep the actual holdings anchor unchanged until an explicit ACTIVE trade occurs.
       return {weights:previous,mode:"SHADOW",tradeTriggered:false,reviewTriggered:true,
         reason:input.independentSegmentSamples<shadow?"独立样本 40–59：影子运行，保留上次实际权重":"样本未跑赢等权：影子运行，保留上次实际权重",
         state:{...input.state,previousWeights:previous},fallback:false};

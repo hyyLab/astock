@@ -9,6 +9,7 @@ export interface BayesStrategyItem {
   id:string; name:string; regime:string; rawWinRate:number; postMean:number;
   hdiLower:number; hdiUpper:number; lambda:number; n:number;
   noSignificantMarketDifference?:boolean;
+  selected?:boolean;
 }
 export interface BayesStrategyViewProps {
   strategies:BayesStrategyItem[];
@@ -96,7 +97,7 @@ export default function BayesStrategyView(props:BayesStrategyViewProps){
             </div><div className="text-[10px] text-dim">HDI {pct(item.hdiLower)}–{pct(item.hdiUpper)}</div></div>
           </div>
           <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-dim">
-            <span>{labels[level]}</span><span>收缩系数 λ={item.lambda.toFixed(2)}</span>
+            <span>{item.selected?"FDR 入选 · ":""}{labels[level]}</span><span>收缩系数 λ={item.lambda.toFixed(2)}</span>
           </div>
         </div>;
       })}</div>}

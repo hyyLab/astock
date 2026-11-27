@@ -6,6 +6,7 @@ export interface RegimeWinRateGroup { regime:string; buckets:WinRateBucket[] }
 export interface BayesStrategyItem {
   id:string; name:string; regime:string; rawWinRate:number; postMean:number;
   hdiLower:number; hdiUpper:number; lambda:number; n:number;
+  posteriorAlpha:number; posteriorBeta:number;
   selected:boolean; noSignificantMarketDifference:boolean;
 }
 export interface AssembleBayesOptions {
@@ -20,6 +21,7 @@ export interface BayesAssemblyResult {
   vpNonPositive:boolean;
   fdr:BayesianFdrResult;
   priorFallbackRegimes:string[];
+  warnings:string[];
 }
 
 /**
@@ -36,6 +38,7 @@ export function assembleBayesStrategyViewData(
   const ids=new Set<string>(),items:BayesStrategyItem[]=[],fdrInput:
     Array<{id:string;regime:string;wins:number;n:number}>=[];
   const priorFallbackRegimes:string[]=[];
+  const warnings:string[]=[];
   let vpNonPositive=false;
   for(const group of groups){
     if(!group.regime||!Array.isArray(group.buckets))throw new Error("Invalid regime group");
@@ -47,7 +50,10 @@ export function assembleBayesStrategyViewData(
       if(ids.has(bucket.id))throw new Error("Duplicate strategy id across regime groups: "+bucket.id);
       ids.add(bucket.id);
       const fitted=posteriorById.get(bucket.id);
-      if(!fitted)continue;
+      if(!fitted){
+        warnings.push(`战法 ${bucket.id} 的桶数据无效，经验先验回退结果中没有该桶，已跳过展示和 FDR`);
+        continue;
+      }
       // In complete-shrinkage mode, keep a common regime-level posterior:
       // individual bucket observations must not re-introduce strategy differences.
       const alpha=prior.completeShrinkage?prior.alpha:prior.alpha+bucket.wins;
@@ -55,8 +61,8 @@ export function assembleBayesStrategyViewData(
       const [hdiLower,hdiUpper]=betaHdi(alpha,beta,credMass);
       items.push({
         id:bucket.id,name:options.names?.[bucket.id]??bucket.id,regime:group.regime,
-        rawWinRate:bucket.n?bucket.wins/bucket.n:0.5,postMean:fitted.postMean,
-        hdiLower,hdiUpper,lambda:fitted.lambda,n:bucket.n,
+        rawWinRate:bucket.n?bucket.wins/bucket.n:fitted.observedRate,postMean:fitted.postMean,
+        hdiLower,hdiUpper,lambda:fitted.lambda,n:bucket.n,posteriorAlpha:alpha,posteriorBeta:beta,
         selected:false,noSignificantMarketDifference:false
       });
       // The minimum-N gate is deliberately applied before invoking FDR.
@@ -67,10 +73,11 @@ export function assembleBayesStrategyViewData(
   const selected=new Set(fdr.fallback?[]:fdr.selectedIds);
   for(const item of items){
     item.selected=selected.has(item.id);
-    item.noSignificantMarketDifference=!item.selected&&item.n>=minN;
+    // A failed FDR computation is unknown evidence, not evidence of no difference.
+    item.noSignificantMarketDifference=!fdr.fallback&&!item.selected&&item.n>=minN;
   }
   return {strategies:items,regimes:[...new Set(groups.map(x=>x.regime))],
-    vpNonPositive,fdr,priorFallbackRegimes};
+    vpNonPositive,fdr,priorFallbackRegimes,warnings};
 }
 
 /** Convenience API when only the BayesStrategyItem[] is needed. */

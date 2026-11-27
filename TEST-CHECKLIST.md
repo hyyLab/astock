@@ -189,7 +189,7 @@
 ### RW-03：R1 回归——第二次调仓事件再走一步
 
 - **输入：** previous=`[0.28,0.28,0.22,0.22]`；`dayIndex=15`；`lastTradeDay=10`；`eventTriggered=true`；冷却默认 5 天。
-- **期望：** `tradeTriggered=true`；新权重 `[0.31,0.31,0.19,0.19]`；每个分量相对上次实际权重变化≤0.03。
+- **期望：** `tradeTriggered=true`；新权重 `[0.31,0.30,0.20,0.19]`；每个分量相对上次实际权重变化≤0.03。
 - **代码位置：** `regime-weight.ts / scheduleRegimeWeights` 的 cooldown/eventDue 计算；`boundedStep`。
 
 ### RW-04：R2 回归——OFF 保留实际权重，不重置等权

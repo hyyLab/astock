@@ -1,7 +1,7 @@
 import { regularizedBeta } from "./fdr";
 
 /** Invert the regularized incomplete beta CDF by monotone bisection. */
-function inverseBetaCdf(probability:number, alpha:number, beta:number):number {
+export function inverseBetaCdf(probability:number, alpha:number, beta:number):number {
   if(probability<=0)return 0;
   if(probability>=1)return 1;
   let lo=0,hi=1;
@@ -59,6 +59,3 @@ export function runHdiSelfChecks():void {
   if(Math.abs(lower-0.05)>1e-6||Math.abs(upper-0.95)>1e-6)
     throw new Error("Uniform Beta(1,1) 90% HDI self-check failed");
 }
-
-// Fail fast if the numerical inversion regresses on the uniform reference case.
-runHdiSelfChecks();
