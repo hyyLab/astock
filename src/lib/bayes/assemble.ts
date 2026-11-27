@@ -48,7 +48,10 @@ export function assembleBayesStrategyViewData(
       ids.add(bucket.id);
       const fitted=posteriorById.get(bucket.id);
       if(!fitted)continue;
-      const alpha=prior.alpha+bucket.wins,beta=prior.beta+bucket.n-bucket.wins;
+      // In complete-shrinkage mode, keep a common regime-level posterior:
+      // individual bucket observations must not re-introduce strategy differences.
+      const alpha=prior.completeShrinkage?prior.alpha:prior.alpha+bucket.wins;
+      const beta=prior.completeShrinkage?prior.beta:prior.beta+bucket.n-bucket.wins;
       const [hdiLower,hdiUpper]=betaHdi(alpha,beta,credMass);
       items.push({
         id:bucket.id,name:options.names?.[bucket.id]??bucket.id,regime:group.regime,
