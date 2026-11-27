@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
@@ -92,17 +92,17 @@ export default function Header({ route }: { route: Route }) {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-card">
-      <div className="mx-auto flex h-12 w-full max-w-[1440px] items-center gap-2 px-3 md:gap-5 md:px-6">
+    <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm">
+      <div className="mx-auto flex h-13 w-full max-w-[1440px] items-center gap-2 px-4 md:gap-5 md:px-6">
         <button
           onClick={() => nav("#/")}
-          className="flex shrink-0 items-center gap-2"
+          className="flex shrink-0 items-center gap-2.5"
           aria-label="返回今日复盘"
         >
-          <span className="flex h-6 w-6 items-center justify-center rounded-[4px] bg-up text-[12px] font-bold text-white">
+          <span className="flex h-7 w-7 items-center justify-center rounded-[3px] bg-amber-500 text-[13px] font-bold text-zinc-950 shadow-sm shadow-amber-500/20">
             连
           </span>
-          <span className="hidden text-[14px] font-bold tracking-wide text-foreground sm:inline">
+          <span className="hidden text-[15px] font-semibold tracking-tight text-foreground sm:inline">
             连板复盘
           </span>
         </button>
@@ -115,9 +115,9 @@ export default function Header({ route }: { route: Route }) {
                 key={item.key}
                 onClick={() => nav(item.hash)}
                 aria-current={active ? "page" : undefined}
-                className={`shrink-0 whitespace-nowrap border-b-2 px-2 py-1.5 transition-colors md:px-2.5 ${
+                className={`shrink-0 whitespace-nowrap border-b-2 px-2.5 py-2 transition-colors md:px-3 ${
                   active
-                    ? "border-up font-medium text-up"
+                    ? "border-amber-500 font-medium text-amber-500"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -129,7 +129,7 @@ export default function Header({ route }: { route: Route }) {
 
         <ThemeToggle mounted={mounted} resolvedTheme={resolvedTheme} setTheme={setTheme} />
 
-        <div className="w-32 shrink-0 sm:w-48 md:w-56" ref={boxRef}>
+        <div className="w-36 shrink-0 sm:w-48 md:w-56" ref={boxRef}>
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-dim" />
             <input
@@ -138,13 +138,13 @@ export default function Header({ route }: { route: Route }) {
               onFocus={() => results.length > 0 && setOpen(true)}
               placeholder="搜索代码 / 名称"
               aria-label="搜索股票"
-              className="h-8 w-full rounded-[4px] border border-border bg-subtle pl-8 pr-8 text-[13px] text-foreground placeholder:text-dim focus:border-link-soft focus:bg-card focus:outline-none"
+              className="h-8 w-full rounded-[3px] border border-border bg-subtle pl-8 pr-8 text-[13px] text-foreground placeholder:text-dim focus:border-amber-500/60 focus:bg-card focus:outline-none focus:ring-1 focus:ring-amber-500/30"
             />
             {searching && (
               <Loader2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-dim" />
             )}
             {open && (
-              <div className="lb-scroll absolute right-0 top-9 z-50 max-h-72 w-72 overflow-y-auto rounded-[4px] border border-border bg-card shadow-lg shadow-black/5">
+              <div className="lb-scroll absolute right-0 top-9 z-50 max-h-72 w-72 overflow-y-auto rounded-[4px] border border-border bg-card shadow-xl shadow-black/20">
                 {results.length === 0 ? (
                   <div className="px-3 py-3 text-center text-xs text-dim">无匹配结果</div>
                 ) : (
@@ -174,10 +174,7 @@ export default function Header({ route }: { route: Route }) {
 }
 
 /**
- * 明暗主题切换（克制：线性图标按钮）
- * 水合一致性：aria-label/title/图标必须统一由 mounted 门控——
- * SSR 时 resolvedTheme 为 undefined，而客户端首帧 next-themes 已能从 localStorage
- * 读出 "dark"，若属性直接读 resolvedTheme 会导致首帧属性不一致（React 19 水合警告）。
+ * 明暗主题切换
  */
 function ThemeToggle({
   mounted,
@@ -194,7 +191,7 @@ function ThemeToggle({
       onClick={() => setTheme(dark ? "light" : "dark")}
       aria-label={dark ? "切换到亮色主题" : "切换到暗色主题"}
       title={dark ? "切换到亮色主题" : "切换到暗色主题"}
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] border border-border text-fg2 transition-colors hover:bg-muted"
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] border border-border text-fg2 transition-colors hover:bg-muted hover:text-amber-500"
     >
       {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>
