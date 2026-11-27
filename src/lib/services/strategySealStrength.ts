@@ -56,10 +56,10 @@ type Outcome = {
 };
 
 const BUCKETS = [
-  { key: "Q1", label: "Q1 弱封单（当日后 25%）" },
+  { key: "Q1", label: "Q1 弱封单（当日最低 25%）" },
   { key: "Q2", label: "Q2 偏弱（25%-50%）" },
   { key: "Q3", label: "Q3 偏强（50%-75%）" },
-  { key: "Q4", label: "Q4 强封单（当日前 25%）" },
+  { key: "Q4", label: "Q4 强封单（当日最高 25%）" },
 ] as const;
 
 function wilsonInterval(successes: number, trials: number) {
@@ -229,9 +229,6 @@ export async function getSealStrengthBacktest(): Promise<SealStrengthBacktest> {
       .sort((a, b) => a.strength - b.strength || a.row.stockCode.localeCompare(b.row.stockCode));
 
     // 每日横截面分四档，阈值只使用当日可见的首板样本。
-    const dayOutcomes = new Map<string, Outcome[]>(
-      BUCKETS.map((bucket) => [bucket.key, []]),
-    );
     candidates.forEach((candidate, index) => {
       const bucketIndex = Math.min(
         BUCKETS.length - 1,
@@ -266,7 +263,6 @@ export async function getSealStrengthBacktest(): Promise<SealStrengthBacktest> {
         closePremiumPct: (next.close / base - 1) * 100,
         lowPct: (next.low / base - 1) * 100,
       };
-      dayOutcomes.get(bucket.key)!.push(outcome);
       outcomesByBucket.get(bucket.key)!.push(outcome);
     });
   }
