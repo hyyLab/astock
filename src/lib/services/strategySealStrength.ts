@@ -275,7 +275,8 @@ export async function getSealStrengthBacktest(): Promise<SealStrengthBacktest> {
     ),
   );
 
-
+  return {
+    asOf: dates[dates.length - 1] ?? "",
     dayCount: dates.length,
     signalCount,
     validSampleCount: buckets.reduce((sum, bucket) => sum + bucket.n, 0),
@@ -284,5 +285,6 @@ export async function getSealStrengthBacktest(): Promise<SealStrengthBacktest> {
     bucketMethod: "每个交易日内对有效首板按封单强度升序排序，等频分为 Q1-Q4；Q4 为当日最强四分之一。不是全历史固定阈值。",
     metricDefinition: "次日高开 = T+1 open > T 日涨停 closePrice；收盘溢价 = (T+1 close / T 日 closePrice - 1) × 100%；最大回撤基于各档每日等权收盘溢价复利净值。未计手续费、滑点、涨停买不到等执行约束。",
     statisticalNote: "个股 n 仅作样本量展示。同日股票相关，不以个股作为独立观测计算 Wilson 区间；区间按交易日聚类，每日该档高开比例 >= 50% 记为成功日，Wilson 区间的 trials 为交易日数。该日级区间衡量的是“多数股票高开日占比”，不是个股高开率区间。n < 20 不输出结论。",
+    buckets,
   };
 }
