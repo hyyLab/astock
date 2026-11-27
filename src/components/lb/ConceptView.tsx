@@ -56,7 +56,7 @@ function SyncLaunchPanel({ clusters }: { clusters: SyncClusterRow[] }) {
                 c.sharedThemes.map((t) => (
                   <span
                     key={t}
-                    className="rounded-[2px] bg-up-soft px-1.5 py-0.5 text-[10px] font-medium leading-4 text-up"
+                    className="rounded-[2px] bg-muted px-1.5 py-0.5 text-[10px] font-medium leading-4 text-fg2"
                   >
                     佐证：{t}
                   </span>
@@ -72,7 +72,7 @@ function SyncLaunchPanel({ clusters }: { clusters: SyncClusterRow[] }) {
                 <button
                   key={s.stockCode}
                   onClick={() => (location.hash = `#/stock/${s.stockCode}`)}
-                  className="num rounded-[3px] border border-border bg-card px-2 py-1 text-[11px] text-fg2 hover:border-up-soft hover:text-up"
+                  className="num rounded-[3px] border border-border bg-card px-2 py-1 text-[11px] text-fg2 hover:border-primary hover:text-primary"
                   title={`首封 ${s.firstLimitTime} · 行业 ${s.industry ?? "—"}${s.themes.length ? ` · 主线 ${s.themes.join("/")}` : ""}`}
                 >
                   <span className="font-medium">{s.stockName}</span>
@@ -153,7 +153,7 @@ export default function ConceptView() {
             }}
             title={t.tip}
             className={`rounded-[3px] px-3 py-1.5 text-[12px] transition-colors ${
-              tab === t.key ? "bg-up-soft font-medium text-up" : "text-muted-foreground hover:bg-muted"
+              tab === t.key ? "bg-sidebar-accent font-medium text-primary" : "text-muted-foreground hover:bg-muted"
             }`}
           >
             {t.label}
@@ -204,7 +204,7 @@ export default function ConceptView() {
                         {c.conceptName}
                         {tab === "theme" && (c.newsCount ?? 0) > 0 && (
                           <span
-                            className="ml-1.5 rounded-[2px] bg-up-soft px-1 align-middle text-[10px] font-normal leading-4 text-up"
+                            className="ml-1.5 rounded-[2px] bg-muted px-1 align-middle text-[10px] font-normal leading-4 text-fg2"
                             title={`当日相关资讯 ${c.newsCount} 条（快讯+成分股个股新闻），其中利好 ${c.newsGoodCount ?? 0} 条`}
                           >
                             新闻 {c.newsCount}
