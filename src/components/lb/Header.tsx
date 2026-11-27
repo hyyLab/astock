@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
@@ -48,7 +48,7 @@ const NAV_ITEMS: { key: Route["view"]; label: string; hash: string }[] = [
   { key: "stocks", label: "个股", hash: "#/stocks" },
 ];
 
-export default function Header({ route }: { route: Route }) {
+export default function Header({ route, navigation = true }: { route: Route; navigation?: boolean }) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [q, setQ] = useState("");
@@ -107,6 +107,7 @@ export default function Header({ route }: { route: Route }) {
           </span>
         </button>
 
+        {navigation && (
         <nav className="lb-scroll flex flex-1 items-center gap-0.5 overflow-x-auto text-[13px]" aria-label="主导航">
           {NAV_ITEMS.map((item) => {
             const active = route.view === item.key;
@@ -126,6 +127,7 @@ export default function Header({ route }: { route: Route }) {
             );
           })}
         </nav>
+        )}
 
         <ThemeToggle mounted={mounted} resolvedTheme={resolvedTheme} setTheme={setTheme} />
 
