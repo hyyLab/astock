@@ -9,8 +9,8 @@ import { api, type NewsRow, type ReviewBundle } from "./api";
 import { RefreshCw, Radio } from "lucide-react";
 
 const IMPACT_META: Record<NewsRow["impact"], { text: string; cls: string }> = {
-  good: { text: "利好", cls: "bg-up-soft text-up" },
-  bad: { text: "利空", cls: "bg-down-soft text-down" },
+  good: { text: "利好", cls: "bg-muted text-fg2" },
+  bad: { text: "利空", cls: "bg-muted text-fg2" },
   none: { text: "中性", cls: "bg-muted text-dim" },
 };
 
@@ -65,7 +65,7 @@ function NewsItemRow({ n, bundle, compact = false }: { n: NewsRow; bundle: Revie
                   <button
                     key={`${t}-${m.stockCode}`}
                     onClick={() => (location.hash = `#/stock/${m.stockCode}`)}
-                    className="rounded-[2px] border border-border bg-card px-1 leading-4 text-fg2 hover:border-up-soft hover:text-up"
+                    className="rounded-[2px] border border-border bg-card px-1 leading-4 text-fg2 hover:border-primary hover:text-primary"
                     title={`${t} · ${m.industry ?? ""} · ${m.boardCount}板`}
                   >
                     {m.stockName}
@@ -150,7 +150,7 @@ export default function NewsTracker({ bundle }: { bundle: ReviewBundle }) {
     <section aria-label="主线追踪" className="panel flex h-full flex-col">
       <div className="module-header">
         <h2 className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
-          <Radio className="h-3.5 w-3.5 text-up" /> 主线追踪
+          <Radio className="h-3.5 w-3.5 text-primary" /> 主线追踪
         </h2>
         <span className={`text-[11px] ${online ? "text-dim" : "text-warn"}`}>
           {online ? `7x24 快讯 · 更新于 ${fetchedAt.slice(11, 16)}` : "数据源暂不可用"}
@@ -180,7 +180,7 @@ export default function NewsTracker({ bundle }: { bundle: ReviewBundle }) {
             key={t.key}
             onClick={() => setFilter(t.key)}
             className={`rounded-[3px] px-1.5 py-0.5 text-[11px] transition-colors ${
-              filter === t.key ? "bg-up-soft font-medium text-up" : "text-muted-foreground hover:bg-muted"
+              filter === t.key ? "bg-sidebar-accent font-medium text-primary" : "text-muted-foreground hover:bg-muted"
             }`}
           >
             {t.label}
