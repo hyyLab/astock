@@ -6,17 +6,23 @@
 import { db as prisma } from "@/lib/db";
 
 export interface PromotionStat {
-  level: string; // "1进2" "2进3" ...
+  level: string; // "1进2" "2进3" 或合并后的高板档
   total: number;
+  n: number;
   promoted: number;
   rate: number;
+  wilsonLower: number | null;
+  wilsonUpper: number | null;
 }
 
 export interface FirstBoardTimeStat {
   bucket: string; // "10:30前" "10:30-14:30" "14:30后"
   total: number;
+  n: number;
   promoted: number;
   rate: number;
+  wilsonLower: number | null;
+  wilsonUpper: number | null;
 }
 
 export interface ReboundStat {
@@ -28,6 +34,11 @@ export interface ReboundStat {
 export interface SentimentTempStat {
   bucket: string; // "低温<40" "中温40-60" "高温>60"
   days: number;
+  n: number;
+  positiveDays: number;
+  positiveDayRate: number | null;
+  wilsonLower: number | null;
+  wilsonUpper: number | null;
   avgNextLimitAvg: number | null; // 次日"昨日涨停今日均涨"平均值
 }
 
@@ -42,9 +53,24 @@ export interface StrategyBundle {
   yesterdayPerf: { tradeDate: string; avgPct: number; redCount: number | null; totalCount: number | null }[];
 }
 
+function wilsonInterval(successes: number, trials: number): { lower: number; upper: number } | null {
+  if (trials <= 0) return null;
+  const z = 1.96;
+  const p = successes / trials;
+  const z2 = z * z;
+  const denominator = 1 + z2 / trials;
+  const center = (p + z2 / (2 * trials)) / denominator;
+  const margin =
+    (z * Math.sqrt((p * (1 - p)) / trials + z2 / (4 * trials * trials))) /
+    denominator;
+  return {
+    lower: Math.max(0, center - margin),
+    upper: Math.min(1, center + margin),
+  };
+}
+
 export async function getStrategyBundle(): Promise<StrategyBundle> {
-  const [days, bh, lu, sd] = await Promise.all([
-    prisma.sentimentDaily.findMany({ orderBy: { tradeDate: "asc" } }),
+  const [bh, lu, sd] = await Promise.all([
     prisma.boardHistory.findMany({ orderBy: { tradeDate: "asc" } }),
     prisma.limitUp.findMany({ orderBy: { tradeDate: "asc" } }),
     prisma.sentimentDaily.findMany({ orderBy: { tradeDate: "asc" } }),
@@ -76,14 +102,53 @@ export async function getStrategyBundle(): Promise<StrategyBundle> {
       promoMap.set(r.boardCount, stat);
     });
   }
-  const promotion: PromotionStat[] = [...promoMap.entries()]
-    .sort((a, b) => a[0] - b[0])
-    .map(([b, s]) => ({
-      level: `${b}进${b + 1}`,
-      total: s.total,
-      promoted: s.promoted,
-      rate: s.total ? s.promoted / s.total : 0,
-    }));
+  const sortedPromo = [...promoMap.entries()].sort((a, b) => a[0] - b[0]);
+  const promotion: PromotionStat[] = [];
+  const addPromotionStat = (
+    level: string,
+    total: number,
+    promoted: number,
+  ) => {
+    const ci = wilsonInterval(promoted, total);
+    promotion.push({
+      level,
+      total,
+      n: total,
+      promoted,
+      rate: total ? promoted / total : 0,
+      wilsonLower: ci?.lower ?? null,
+      wilsonUpper: ci?.upper ?? null,
+    });
+  };
+
+  // 保留低位档；4板及以上先合并。若高位合并样本仍不足20，
+  // 逐步向下扩展合并范围，避免把极少数高板样本单独解释。
+  const maxBoard = sortedPromo.length ? sortedPromo[sortedPromo.length - 1][0] : 0;
+  let highStart = maxBoard >= 4 ? 4 : maxBoard + 1;
+  const sumFrom = (start: number) =>
+    sortedPromo
+      .filter(([board]) => board >= start)
+      .reduce(
+        (sum, [, stat]) => ({
+          total: sum.total + stat.total,
+          promoted: sum.promoted + stat.promoted,
+        }),
+        { total: 0, promoted: 0 },
+      );
+
+  if (maxBoard >= 4) {
+    while (highStart > 2 && sumFrom(highStart).total < 20) highStart--;
+  }
+
+  for (const [board, stat] of sortedPromo) {
+    if (maxBoard >= 4 && board >= highStart) continue;
+    addPromotionStat(`${board}进${board + 1}`, stat.total, stat.promoted);
+  }
+
+  if (maxBoard >= 4) {
+    const high = sumFrom(highStart);
+    addPromotionStat(`${highStart}板及以上`, high.total, high.promoted);
+  }
 
   // 2) 首板封板时间分层 -> 次日晋级率
   const buckets: { key: string; label: string; total: number; promoted: number }[] = [
@@ -104,12 +169,18 @@ export async function getStrategyBundle(): Promise<StrategyBundle> {
       if (t && t.boardCount === 2) b.promoted++;
     });
   }
-  const firstBoardTime: FirstBoardTimeStat[] = buckets.map((b) => ({
-    bucket: b.label,
-    total: b.total,
-    promoted: b.promoted,
-    rate: b.total ? b.promoted / b.total : 0,
-  }));
+  const firstBoardTime: FirstBoardTimeStat[] = buckets.map((b) => {
+    const ci = wilsonInterval(b.promoted, b.total);
+    return {
+      bucket: b.label,
+      total: b.total,
+      n: b.total,
+      promoted: b.promoted,
+      rate: b.total ? b.promoted / b.total : 0,
+      wilsonLower: ci?.lower ?? null,
+      wilsonUpper: ci?.upper ?? null,
+    };
+  });
 
   // 3) 反包战法：断板后再涨停的股票，次日再涨停概率
   let rbTotal = 0;
@@ -138,16 +209,29 @@ export async function getStrategyBundle(): Promise<StrategyBundle> {
   for (let i = 0; i < sd.length - 1; i++) {
     const t = sd[i].sentimentTemperature;
     const nextAvg = sd[i + 1].yesterdayLimitAvg;
-    if (nextAvg === null || nextAvg === undefined) continue;
+    // 空温度或非有限值不归入任何温度档，避免 null 被当作高温。
+    if (t === null || t === undefined || !Number.isFinite(t)) continue;
+    if (nextAvg === null || nextAvg === undefined || !Number.isFinite(nextAvg)) continue;
     if (t < 40) tempGroups[0].vals.push(nextAvg);
     else if (t < 60) tempGroups[1].vals.push(nextAvg);
     else tempGroups[2].vals.push(nextAvg);
   }
-  const sentimentTemp: SentimentTempStat[] = tempGroups.map((g) => ({
-    bucket: g.label,
-    days: g.vals.length,
-    avgNextLimitAvg: g.vals.length ? g.vals.reduce((s, x) => s + x, 0) / g.vals.length : null,
-  }));
+  const sentimentTemp: SentimentTempStat[] = tempGroups.map((g) => {
+    const positiveDays = g.vals.filter((value) => value > 0).length;
+    const ci = wilsonInterval(positiveDays, g.vals.length);
+    return {
+      bucket: g.label,
+      days: g.vals.length,
+      n: g.vals.length,
+      positiveDays,
+      positiveDayRate: g.vals.length ? positiveDays / g.vals.length : null,
+      wilsonLower: ci?.lower ?? null,
+      wilsonUpper: ci?.upper ?? null,
+      avgNextLimitAvg: g.vals.length
+        ? g.vals.reduce((s, x) => s + x, 0) / g.vals.length
+        : null,
+    };
+  });
 
   // 5) 昨日涨停今日表现序列
   const yesterdayPerf = sd
