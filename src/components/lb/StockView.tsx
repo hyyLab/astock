@@ -165,7 +165,7 @@ export default function StockView({ code }: { code: string }) {
                   className="num flex items-center gap-2.5 rounded-[3px] border border-line bg-hover px-3 py-2 text-[13px] tabular-nums"
                 >
                   <span className="text-muted-foreground">{r.tradeDate}</span>
-                  <span className="rounded-[2px] bg-up-soft px-1.5 py-0.5 text-[11px] font-semibold text-up">
+                  <span className="rounded-[2px] bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-fg2">
                     {r.boardCount}板
                   </span>
                   {r.daysAndBoards && <span className="text-[11px] text-dim2">{r.daysAndBoards}</span>}
@@ -192,11 +192,11 @@ export default function StockView({ code }: { code: string }) {
                 >
                   <span className="text-muted-foreground">{r.tradeDate}</span>
                   {r.isBreak ? (
-                    <span className="rounded-[2px] border border-down-soft bg-down-soft px-1.5 py-0.5 text-[11px] text-down">
+                    <span className="rounded-[2px] border border-border bg-muted px-1.5 py-0.5 text-[11px] text-fg2">
                       断板（昨日 {r.previousBoardCount} 板）
                     </span>
                   ) : (
-                    <span className="rounded-[2px] bg-up-soft px-1.5 py-0.5 text-[11px] font-semibold text-up">
+                    <span className="rounded-[2px] bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-fg2">
                       {r.boardCount}板
                     </span>
                   )}
