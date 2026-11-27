@@ -322,7 +322,7 @@
 
 ### ASM-05：完整收缩时 HDI 不得重新引入桶间差异
 
-- **输入：** 使用 ASM-01 的三桶结构，但改为 A=(0,10)、B=(5,10)、C=(10,10)，使组内 `vp<=0`。
+- **输入：** 使用三桶 A=(4,10)、B=(5,10)、C=(6,10)，使组内观测桶间方差小于二项噪声方差，得到 `vp<0`。
 - **期望：**
   - `vpNonPositive=true`。
   - `priorFallbackRegimes=[]`（这是 completeShrinkage，不是估计 fallback）。
