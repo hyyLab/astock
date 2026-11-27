@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -328,4 +328,123 @@ model CollectLog {
   durationMs   Int
   status       String // success / failed / partial
   message      String?
+}
+
+
+// ============================================================
+// Bayesian Shadow Period - PostgreSQL-native shadow telemetry
+// ============================================================
+
+enum Regime {
+  ICE
+  RECOVERY
+  WARMING
+  EUPHORIA
+  EXTREME
+}
+
+enum L0Scenario {
+  BASE
+  BULL
+  BEAR
+}
+
+enum DataQuality {
+  GOOD
+  PARTIAL
+  MISSING
+  INVALID
+}
+
+enum ExitReason {
+  NEXT_DAY_CLOSE
+  STOP_LOSS
+  TAKE_PROFIT
+  LIMIT_DOWN
+  OTHER
+}
+
+model ShadowOrder {
+  id             String   @id @default(cuid())
+  tradingDay     String
+  ticker         String
+  signalId       String
+
+  placedAt       DateTime @db.Timestamptz(3)
+  sealAt         DateTime? @db.Timestamptz(3)
+
+  sealPrice      Decimal  @db.Decimal(10, 3)
+  sealOrderValue BigInt
+  queuePosProxy  Decimal? @db.Decimal(9, 6)
+
+  regimeAsOf     Regime
+  featureAsOf    DateTime @db.Date
+  l0Scenario     L0Scenario
+
+  fills          ShadowFill[]
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([tradingDay, ticker, signalId])
+  @@index([tradingDay])
+  @@index([ticker, tradingDay])
+}
+
+model ShadowFill {
+  id             String      @id @default(cuid())
+  shadowOrderId  String?
+  shadowOrder    ShadowOrder? @relation(fields: [shadowOrderId], references: [id], onDelete: Cascade)
+
+  filled         Boolean     @default(false)
+  fillAt         DateTime?   @db.Timestamptz(3)
+  rejectReason   String?
+  quality        DataQuality
+
+  createdAt      DateTime    @default(now()) @db.Timestamptz(3)
+
+  @@index([shadowOrderId])
+  @@index([filled])
+  @@index([quality])
+}
+
+model ShadowDayOutcome {
+  id              String   @id @default(cuid())
+  tradingDay      String
+  ticker          String
+  signalId        String
+
+  openedAfterSeal Boolean
+  postSealVolume  BigInt?
+  postSealAmount  BigInt?
+  consumeRatio    Decimal? @db.Decimal(9, 6)
+
+  // Hard marker: this row contains only information observed after seal.
+  postSealOnly    Boolean  @default(true)
+
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([tradingDay, ticker, signalId])
+  @@index([tradingDay])
+  @@index([ticker, tradingDay])
+  @@index([postSealOnly])
+}
+
+model ShadowNextDayReturn {
+  id           String      @id @default(cuid())
+  tradingDay   String
+  ticker       String
+  signalId     String
+
+  exitPrice    Decimal?    @db.Decimal(10, 3)
+  grossReturn  Decimal?    @db.Decimal(9, 6)
+  netReturn    Decimal?    @db.Decimal(9, 6)
+  slippage     Decimal?    @db.Decimal(9, 6)
+  benchmarkRet Decimal?    @db.Decimal(9, 6)
+  exitReason   ExitReason?
+
+  createdAt    DateTime    @default(now()) @db.Timestamptz(3)
+
+  @@unique([tradingDay, ticker, signalId])
+  @@index([tradingDay])
+  @@index([ticker, tradingDay])
+  @@index([exitReason])
 }
