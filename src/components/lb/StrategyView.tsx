@@ -187,7 +187,7 @@ export default function StrategyView() {
       {/* 昨日涨停表现序列 */}
       <Card
         title="昨日涨停 · 今日表现（逐日）"
-        icon={<TrendingUp className="h-3.5 w-3.5 text-up" />}
+        icon={<TrendingUp className="h-3.5 w-3.5 text-primary" />}
         note="打板生态最直接的温度计：红盘占比低于一半的日子，打板就是接飞刀。"
       >
         <div className="space-y-1">
@@ -196,7 +196,7 @@ export default function StrategyView() {
               <span className="w-20 shrink-0 tabular-nums text-dim">{d.tradeDate.slice(5)}</span>
               <div className="h-1.5 flex-1 overflow-hidden rounded bg-subtle">
                 <div
-                  className={`h-full rounded ${d.avgPct >= 0 ? "bg-up" : "bg-down"}`}
+                  className="h-full rounded bg-[#8B98A7]"
                   style={{ width: `${Math.min(100, Math.abs(d.avgPct) * 10)}%` }}
                 />
               </div>
