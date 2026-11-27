@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 // 连板复盘 · 主页
 // 仅 / 一个页面路由，视图通过 hash 路由切换：
@@ -47,7 +47,7 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <Header route={route} />
 
-      <main className="mx-auto w-full max-w-[1440px] flex-1 px-3 py-4 md:px-6 md:py-5">
+      <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-5 md:px-6 md:py-6">
         {route.view === "today" && <ReviewView key={route.date ?? ""} initialDate={route.date} />}
         {route.view === "stock" && route.code && <StockView code={route.code} />}
         {route.view === "ladder" && <LadderView />}
@@ -63,11 +63,11 @@ export default function Home() {
         {route.view === "stocks" && <StocksView />}
       </main>
 
-      <footer className="mt-auto border-t border-border bg-card">
-        <div className="mx-auto flex w-full max-w-[1440px] flex-col items-center justify-between gap-1.5 px-3 py-4 text-[11px] text-dim md:flex-row md:px-6">
-          <span>连板复盘 · 涨停/连板/题材/情绪/量能 结构化市场复盘工作台</span>
-          <span>
-            数据来源：东方财富涨停池 &amp; 腾讯行情公开接口整理 · 仅供学习研究，不构成任何投资建议
+      <footer className="mt-auto border-t border-border bg-card/80">
+        <div className="mx-auto flex w-full max-w-[1440px] flex-col items-center justify-between gap-2 px-4 py-5 text-[11px] text-dim md:flex-row md:px-6">
+          <span className="tracking-wide">连板复盘 · 涨停 / 连板 / 题材 / 情绪 / 量能 结构化复盘工作台</span>
+          <span className="text-dim2">
+            数据来源：东方财富涨停池 & 腾讯行情公开接口 · 仅供学习研究，不构成投资建议
           </span>
         </div>
       </footer>
