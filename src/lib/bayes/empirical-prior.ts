@@ -59,7 +59,7 @@ export function estimateEmpiricalPrior(input: WinRateBucket[], options: Empirica
     });
     const result={alpha,beta,mu,kappa,observedVar,binomialVar,vp,completeShrinkage,
       fallback:false,reason:null,buckets};
-    runEmpiricalPriorSelfChecks(result,c.minMu,c.maxMu);
+    runEmpiricalPriorSelfChecks(result,0,1);
     return result;
   } catch(e) { return fallback(Array.isArray(input) ? input.filter(valid) : [],
     e instanceof Error ? e.message : "经验贝叶斯估计异常"); }
