@@ -5,6 +5,7 @@
 
 import { db } from "@/lib/db";
 import { cached } from "@/lib/cache";
+import { EmptyDataError } from "@/lib/services/errors";
 import type { PromotionLevel } from "@/lib/calc/board";
 import { buildSyncClusters, type SyncCluster } from "@/lib/calc/syncLaunch";
 
@@ -292,7 +293,7 @@ async function aggregateThemeNews(tradeDate: string, nextDate: string | null) {
 export async function getReviewBundle(dateInput?: string): Promise<ReviewBundle> {
   return cached(`review:full:${dateInput ?? "latest"}`, async () => {
     const markets = await db.dailyMarket.findMany({ orderBy: { tradeDate: "asc" } });
-    if (markets.length === 0) throw new Error("数据库为空，请先执行采集（bun scripts/collect-daily.ts）");
+    if (markets.length === 0) throw new EmptyDataError("数据库为空，请先执行采集（bun scripts/collect-daily.ts）");
 
     const dates = markets.map((m) => m.tradeDate);
     const latestDate = dates[dates.length - 1];
@@ -321,7 +322,7 @@ export async function getReviewBundle(dateInput?: string): Promise<ReviewBundle>
       db.volumeSurge.findMany({ where: { tradeDate }, orderBy: { volumeRatio: "desc" } }),
     ]);
 
-    if (!sentiment) throw new Error(`交易日 ${tradeDate} 数据不完整`);
+    if (!sentiment) throw new EmptyDataError(`交易日 ${tradeDate} 数据不完整`);
 
     // 主线新闻流：快讯+成分股个股新闻 → 主线计数/利好数/头条（用户需求：新闻直接挂主线，直观了解强度）
     const themeNews = await aggregateThemeNews(tradeDate, nextDate);

@@ -135,11 +135,23 @@ function lastExpectedEodDate(): string {
 async function gapCheck(reason: string): Promise<boolean> {
   const today = bjDateStr();
   if (g.__lbSchedulerGapCheckDate === today) return false; // 今天已补跑过
-  const expected = lastExpectedEodDate();
-  const latest = await db.dailyMarket.findFirst({
-    orderBy: { tradeDate: "desc" },
-    select: { tradeDate: true },
-  });
+  let expected: string;
+  let latest: { tradeDate: string } | null;
+  try {
+    expected = lastExpectedEodDate();
+    latest = await db.dailyMarket.findFirst({
+      orderBy: { tradeDate: "desc" },
+      select: { tradeDate: true },
+    });
+  } catch (e) {
+    // 巡检本身失败（如数据库不可用）：记录错误状态供 /api/admin/scheduler 查看，
+    // 不让 void 调用产生未处理的 Promise 拒绝导致进程崩溃。
+    const st = state().collect;
+    st.lastOk = false;
+    st.lastError = `收盘缺口巡检失败（${reason}）：${(e as Error).message}`;
+    console.error(`[scheduler] 收盘缺口巡检失败（${reason}）:`, (e as Error).message);
+    return false;
+  }
   if (latest && latest.tradeDate >= expected) return false; // 无缺口
   console.log(
     `[scheduler] 收盘数据缺口（${reason}）：库内最新 ${latest?.tradeDate ?? "无"} < 应有 ${expected}，补跑采集`

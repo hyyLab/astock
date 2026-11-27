@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getReviewBundle } from "@/lib/services/review";
+import { EmptyDataError } from "@/lib/services/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ export async function GET(req: NextRequest) {
     else if (scope === "broken") rows = b.broken;
     return NextResponse.json({ tradeDate: b.tradeDate, count: rows.length, rows });
   } catch (e) {
+    if (e instanceof EmptyDataError) return NextResponse.json({ error: e.message }, { status: 404 });
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
 }
