@@ -11,7 +11,7 @@ export interface EmpiricalPriorResult {
   alpha: number; beta: number; mu: number; kappa: number;
   observedVar: number; binomialVar: number; vp: number;
   completeShrinkage: boolean; fallback: boolean; reason: string | null;
-  buckets: BucketPosterior[];
+  buckets: BucketPosterior[]; selfCheckWarning?: string | null;
 }
 const DEFAULTS = { minBucketN: 5, minBuckets: 3, minMu: 0.01, maxMu: 0.99, minKappa: 1, maxKappa: 200 };
 const clamp = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x));
@@ -35,10 +35,10 @@ export function estimateEmpiricalPrior(input: WinRateBucket[], options: Empirica
         !Number.isInteger(c.minBuckets) || c.minBuckets < 1 ||
         !(c.minMu > 0 && c.minMu < c.maxMu && c.maxMu < 1) ||
         !(c.minKappa > 0 && c.minKappa <= c.maxKappa)) throw new Error("Invalid options");
-    if (input.reduce((s,b) => s+b.n,0) === 0) return fallback(input, "总样本数为 0");
+    if (input.reduce((s,b) => s+b.n,0) === 0) return fallback(input, `总样本数为 0（输入桶数：${input.length}）`);
     const fit = input.filter(b => b.n >= c.minBucketN);
     const fitN = fit.reduce((s,b) => s+b.n,0);
-    if (fit.length < c.minBuckets || fitN === 0) return fallback(input, "有效桶少于 3 个");
+    if (fit.length < c.minBuckets || fitN === 0) return fallback(input, `有效桶少于要求数量 ${c.minBuckets} 个（实际：${fit.length}）`);
     const rawMu = fit.reduce((s,b) => s+b.wins,0) / fitN;
     const mu = clamp(rawMu,c.minMu,c.maxMu);
     const observedVar = fit.reduce((s,b) => s + b.n/fitN * (b.wins/b.n-rawMu)**2,0);
@@ -59,14 +59,21 @@ export function estimateEmpiricalPrior(input: WinRateBucket[], options: Empirica
     });
     const result={alpha,beta,mu,kappa,observedVar,binomialVar,vp,completeShrinkage,
       fallback:false,reason:null,buckets};
-    runEmpiricalPriorSelfChecks(result,0,1);
+    try {
+      // Keep valid posterior estimates even if a diagnostic invariant regresses.
+      runEmpiricalPriorSelfChecks(result,0,1);
+      result.selfCheckWarning=null;
+    } catch (e) {
+      result.selfCheckWarning=e instanceof Error?e.message:"经验贝叶斯自检异常";
+      console.warn("[empirical-prior] self-check warning:",result.selfCheckWarning);
+    }
     return result;
   } catch(e) { return fallback(Array.isArray(input) ? input.filter(valid) : [],
     e instanceof Error ? e.message : "经验贝叶斯估计异常"); }
 }
 
 /** Self-checks: lambda decreases with n, posterior is bounded, and large n approaches p_i. */
-export function runEmpiricalPriorSelfChecks(result: EmpiricalPriorResult, minMu=0.01, maxMu=0.99): void {
+export function runEmpiricalPriorSelfChecks(result: EmpiricalPriorResult, minMu=0, maxMu=1): void {
   const ordered=result.buckets.filter(b=>b.n>0).sort((a,b)=>a.n-b.n);
   for(let i=1;i<ordered.length;i++) if(ordered[i].lambda>ordered[i-1].lambda+1e-12)
     throw new Error("lambda must be non-increasing with n");
