@@ -10,7 +10,11 @@ const rows=await pmap(dates,3,async date=>{
  return {date,zt:score(zt.map(x=>x.code),lu.map(x=>x.stockCode)),zb:score(zb.map(x=>x.code),br.map(x=>x.stockCode)),dt:score(dt.map(x=>x.code),dd.map(x=>x.stockCode))};
 });
 const avg=(k:"zt"|"zb"|"dt",f:"recall"|"precision")=>rows.reduce((s,r)=>s+r[k][f],0)/Math.max(1,rows.length);
-const report={rows,mean:{ztRecall:avg("zt","recall"),ztPrecision:avg("zt","precision"),zbRecall:avg("zb","recall"),zbPrecision:avg("zb","precision"),dtRecall:avg("dt","recall"),dtPrecision:avg("dt","precision")}};
+const leaders=["002242","000530","001309","603986"];
+const leaderRows=await db.limitUp.findMany({where:{stockCode:{in:leaders}},orderBy:{tradeDate:"desc"},select:{stockCode:true,tradeDate:true,boardCount:true}});
+const leaderCoverage=leaders.map(code=>({code,rows:leaderRows.filter(x=>x.stockCode===code).length,latest:leaderRows.find(x=>x.stockCode===code)||null}));
+const report={rows,mean:{ztRecall:avg("zt","recall"),ztPrecision:avg("zt","precision"),zbRecall:avg("zb","recall"),zbPrecision:avg("zb","precision"),dtRecall:avg("dt","recall"),dtPrecision:avg("dt","precision")},leaderCoverage};
 console.log(JSON.stringify(report,null,2));
 if(report.mean.ztRecall<.97||report.mean.ztPrecision<.95||report.mean.zbRecall<.90||report.mean.zbPrecision<.85)process.exitCode=2;
+if(leaderCoverage.some(x=>x.rows===0))process.exitCode=3;
 await db.$disconnect();
