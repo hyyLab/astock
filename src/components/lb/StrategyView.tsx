@@ -4,6 +4,7 @@
 // 数据口径全部透明：样本数、统计窗口直接展示，不搞黑箱
 
 import { useEffect, useState } from "react";
+import BayesStrategyView, { type BayesStrategyItem } from "@/components/lb/BayesStrategyView";
 import { RefreshCw, FlaskConical, TrendingUp, Clock, Flame, Repeat, Shield, Target } from "lucide-react";
 
 interface PromotionStat {
@@ -96,6 +97,17 @@ interface StrategyBundle {
   yesterdayPerf: { tradeDate: string; avgPct: number; redCount: number | null; totalCount: number | null }[];
   sealStrength: SealStrengthBacktest;
   sectorFirstSeal: SectorFirstSealBundle;
+  bayes: {
+    strategies: BayesStrategyItem[];
+    regimes: string[];
+    vpNonPositiveRegimes: string[];
+    warnings: string[];
+    regimeClassification: string;
+    allocationMode: string;
+    optimization: { targetWeights: number[]; equalWeights: number[]; converged: boolean; fallback: boolean; iterations: number; objective: number };
+    scheduler: { mode: "OFF" | "SHADOW" | "ACTIVE"; weights: number[]; tradeTriggered: boolean; reviewTriggered: boolean; reason: string; fallback: boolean };
+    pipelineWarnings: string[];
+  };
 }
 
 function pct(x: number | null | undefined): string {
@@ -221,6 +233,17 @@ export default function StrategyView() {
           样本：{data.asOf} 前 {data.dayCount} 个交易日 · {data.sampleCount} 条涨停记录 · 全部为库内真实数据回测，不构成投资建议
         </p>
       </div>
+
+      <section className="rounded border border-border bg-card p-3">
+        <BayesStrategyView strategies={data.bayes.strategies} vpNonPositiveRegimes={data.bayes.vpNonPositiveRegimes} regimes={data.bayes.regimes} />
+        <div className="mt-3 border-t border-border pt-2 text-[11px] text-dim">
+          <div className="font-medium">联合后验与权重优化（影子模式）</div>
+          <p>优化目标权重：{data.bayes.strategies.map((item, index) => `${item.name} ${(data.bayes.optimization.targetWeights[index] * 100).toFixed(1)}%`).join(" · ")}</p>
+          <p>调度状态：{data.bayes.scheduler.mode} · 实际锚点权重保持等权 · {data.bayes.scheduler.reason}</p>
+          {data.bayes.pipelineWarnings.map((warning) => <p key={warning}>说明：{warning}</p>)}
+          {data.bayes.warnings.map((warning) => <p key={warning}>数据警告：{warning}</p>)}
+        </div>
+      </section>
 
       {/* 战法一：连板晋级率（强者恒强） */}
       <Card
