@@ -120,9 +120,10 @@ export function scheduleRegimeWeights(input:SchedulerInput,options:SchedulerOpti
   const off=options.hardFloorOff??40,shadow=options.hardFloorShadow??60;
   try{
     const regimeTarget=input.regime==="UNCLASSIFIED"?undefined:input.targetWeightsByRegime?.[input.regime];
+    const regimeProbability=input.regime==="UNCLASSIFIED"?0:input.probabilities[input.regime];
     // A regime-specific target is adopted only when the supplied regime posterior
     // gives the confirmed regime at least 50% membership; otherwise use upstream target.
-    const target=regimeTarget&&input.probabilities[input.regime]>=0.5?regimeTarget:input.targetWeights;
+    const target=regimeTarget&&regimeProbability>=0.5?regimeTarget:input.targetWeights;
     const n=target.length;
     if(!Number.isInteger(input.dayIndex)||n<1||target.some(x=>!Number.isFinite(x)||x<0)||
       !Number.isInteger(input.independentSegmentSamples)||input.independentSegmentSamples<0||

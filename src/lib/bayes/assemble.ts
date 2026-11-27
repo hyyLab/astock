@@ -43,8 +43,12 @@ export function assembleBayesStrategyViewData(
   for(const group of groups){
     if(!group.regime||!Array.isArray(group.buckets))throw new Error("Invalid regime group");
     const prior=estimateEmpiricalPrior(group.buckets);
-    if(prior.fallback)priorFallbackRegimes.push(group.regime);
-    if(prior.vp<=0||prior.completeShrinkage)vpNonPositive=true;
+    if(prior.fallback){
+      priorFallbackRegimes.push(group.regime);
+      warnings.push(`Regime ${group.regime} 经验先验回退：${prior.reason??"未知原因"}`);
+    }else if(prior.vp<=0||prior.completeShrinkage){
+      vpNonPositive=true;
+    }
     const posteriorById=new Map(prior.buckets.map(x=>[x.id,x]));
     for(const bucket of group.buckets){
       if(ids.has(bucket.id))throw new Error("Duplicate strategy id across regime groups: "+bucket.id);

@@ -94,6 +94,7 @@ function buildBayesPipeline(bundle: Awaited<ReturnType<typeof getStrategyBundle>
     },
     jointDiagnostics: draws.diagnostics,
     pipelineWarnings: [
+      ...(assembly.fdr.fallback ? [`FDR 计算失败，未给出显著性结论：${assembly.fdr.reason??"未知原因"}`] : []),
       "当前数据库汇总没有经过确认的市场 regime 标签，所有桶暂归 UNCLASSIFIED；不推断市场状态。",
       "当前没有独立样本外调仓段，调度器固定为 OFF；不会生成或执行真实交易。",
       "成交率没有可用观测，pFill 使用中性 Beta(1,1)；超参数使用共享单位尺度抽样。",
