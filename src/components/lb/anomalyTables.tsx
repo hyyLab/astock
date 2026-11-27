@@ -52,7 +52,7 @@ export function AnomalyStockTable({
     return [...rows].sort(cmp[sortKey]);
   }, [rows, sortKey]);
 
-  const th = (active: boolean) => `cursor-pointer px-2 py-1.5 text-right font-normal hover:text-foreground ${active ? "text-up" : ""}`;
+  const th = (active: boolean) => `cursor-pointer px-2 py-1.5 text-right font-normal hover:text-foreground ${active ? "text-primary" : ""}`;
 
   return (
     <div className="lb-scroll overflow-x-auto">
@@ -103,13 +103,13 @@ export function AnomalyStockTable({
               </td>
               <td className="whitespace-nowrap px-2 py-1.5 text-center">
                 {r.isLimitUp ? (
-                  <span className="rounded-[2px] bg-up-soft px-1 text-[10px] leading-4 text-up">
+                  <span className="rounded-[2px] bg-muted px-1 text-[10px] leading-4 text-fg2">
                     {r.boardCount != null && r.boardCount >= 2 ? `${r.boardCount}板涨停` : "涨停"}
                   </span>
                 ) : r.isBroken ? (
                   <span className="rounded-[2px] bg-warn-soft px-1 text-[10px] leading-4 text-warn-strong">炸板</span>
                 ) : r.isLimitDown ? (
-                  <span className="rounded-[2px] bg-down-soft px-1 text-[10px] leading-4 text-down">跌停</span>
+                  <span className="rounded-[2px] bg-muted px-1 text-[10px] leading-4 text-fg2">跌停</span>
                 ) : null}
                 <span
                   className="ml-1 rounded-[2px] bg-muted px-1 text-[10px] leading-4 text-dim"
@@ -193,7 +193,7 @@ export function SectorEffectTable({ rows }: { rows: SectorEffectRow[] }) {
                   <td className="px-2 py-1.5 text-center">
                     <span
                       className={`rounded-[2px] px-1 text-[10px] leading-4 ${
-                        s.kind === "theme" ? "bg-up-soft text-up" : "bg-muted text-muted-foreground"
+                        s.kind === "theme" ? "bg-muted text-fg2" : "bg-muted text-muted-foreground"
                       }`}
                     >
                       {s.kind === "theme" ? "主线" : "行业"}
@@ -338,10 +338,10 @@ export function LeaderTable({ rows }: { rows: LeaderRow[] }) {
 // ---------- 前期爆量表 ----------
 
 const SURGE_STATUS: Record<PriorSurgeRow["status"], { label: string; cls: string }> = {
-  limitup: { label: "今日涨停", cls: "bg-up-soft text-up" },
-  surging: { label: "今日拉升", cls: "bg-up-soft text-up" },
+  limitup: { label: "今日涨停", cls: "bg-muted text-fg2" },
+  surging: { label: "今日拉升", cls: "bg-muted text-fg2" },
   holding: { label: "守住不跌", cls: "bg-muted text-muted-foreground" },
-  floor_broken: { label: "跌破基准", cls: "bg-down-soft text-down" },
+  floor_broken: { label: "跌破基准", cls: "bg-muted text-fg2" },
 };
 
 export function PriorSurgeTable({ rows }: { rows: PriorSurgeRow[] }) {
@@ -356,7 +356,7 @@ export function PriorSurgeTable({ rows }: { rows: PriorSurgeRow[] }) {
   }, [rows, sortKey]);
 
   const th = (active: boolean) =>
-    `cursor-pointer px-2 py-1.5 ${active ? "text-up" : ""} font-normal hover:text-foreground ${active ? "" : "text-dim"}`;
+    `cursor-pointer px-2 py-1.5 ${active ? "text-primary" : ""} font-normal hover:text-foreground ${active ? "" : "text-dim"}`;
 
   return (
     <div className="lb-scroll overflow-x-auto">
@@ -413,7 +413,7 @@ export function PriorSurgeTable({ rows }: { rows: PriorSurgeRow[] }) {
               </td>
               <td className="whitespace-nowrap px-2 py-1.5 text-left text-fg2">
                 <span className="num">{r.surgeDate.slice(5)}</span>
-                {r.surgeIsLimitUp && <span className="ml-1 rounded-[2px] bg-up-soft px-1 text-[10px] leading-4 text-up">涨停</span>}
+                {r.surgeIsLimitUp && <span className="ml-1 rounded-[2px] bg-muted px-1 text-[10px] leading-4 text-fg2">涨停</span>}
                 {r.surgeIsBroken && <span className="ml-1 rounded-[2px] bg-muted px-1 text-[10px] leading-4 text-dim">炸板</span>}
               </td>
               <td className="whitespace-nowrap px-2 py-1.5 text-center">
