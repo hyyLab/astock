@@ -351,6 +351,38 @@
   - 三个桶的 `rawCountScreen` 只反映原始计数 FDR 结果，不得改变后验判断；允许它与共同 HDI/完全收缩并存。
 - **代码位置：** `assemble.ts / assembleBayesStrategyViewData` 的 `prior.completeShrinkage ? prior.alpha : prior.alpha+bucket.wins` 分支。
 
+### ASM-05b：完全收缩与 FDR 入选同时存在时，后验判断仍为证据不足
+
+- **输入：**
+  ```ts
+  const groups = [{
+    regime: "ICE",
+    buckets: [
+      { id: "A", wins: 0, n: 10 },
+      { id: "B", wins: 1, n: 10 },
+      { id: "C", wins: 2, n: 10 }
+    ]
+  }];
+  const data = assembleBayesStrategyViewData(groups);
+  ```
+- **先验 / FDR 核对：**
+  - 三个桶的原始胜率为 0、0.1、0.2，加权总体均值 `mu=0.1`。
+  - `observedVar=0.0066666667`、`binomialVar=0.0083333333`、`vp=-0.0016666667`，因此 `completeShrinkage=true`。
+  - `vpNonPositiveRegimes=["ICE"]`，且 `priorFallbackRegimes=[]`。
+  - FDR 的 leave-one-out 基准分别为 A=`0.15`、B=`0.10`、C=`0.05`；默认 `q=0.10` 下只有 C 入选，故按 A、B、C 输入顺序 `rawCountScreen=[false,false,true]`。
+- **装配层期望：**
+  - 三个 bucket 的 `lambda` 均为 `1`，`postMean` 均为 `0.1`。
+  - 三个 bucket 的 `hdiLower` 完全相同，`hdiUpper` 完全相同（均使用同一个 regime-level `Beta(prior.alpha, prior.beta)` 后验）。
+  - `rawCountScreen` 依次为 `false,false,true`；特别确认 C 的 `true` 不会改变其后验判断。
+- **展示层期望：** 将 `data.strategies`、`data.vpNonPositiveRegimes` 和 `data.regimes` 传给 `BayesStrategyView`：
+  - ICE 的完全收缩提示 banner 可见。
+  - A、B、C 三张卡片的后验判断均为 `INSUFFICIENT`（界面文案“样本不足”），因为 `lambda=1` 达到默认 insufficient 阈值。
+  - C 卡片仍显示“原始计数 FDR（探索性）：入选”，但后验判断仍是“样本不足”。
+  - 页面不得出现 `NO_DIFFERENCE` 标签，也不得出现旧格式 `FDR 入选 · ` 前缀。
+- **代码位置：** `assemble.ts / assembleBayesStrategyViewData` 的 complete-shrinkage、FDR 与 `rawCountScreen` 映射；`BayesStrategyView.tsx / evidence`、完全收缩 banner 和原始计数 FDR 展示。
+
+---
+
 ### ASM-06：经验先验自检警告必须传递到 API warnings
 
 - **输入：** 使用一个可成功拟合的 regime（至少三个有效桶），并在 `estimateEmpiricalPrior` 内部自检处注入 `Error("SELF_CHECK_INJECTED")`。

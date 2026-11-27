@@ -8,7 +8,7 @@ export type BayesEvidenceLevel = "INSUFFICIENT" | "WATCH" | "SUFFICIENT";
 export interface BayesStrategyItem {
   id:string; name:string; regime:string; rawWinRate:number; postMean:number;
   hdiLower:number; hdiUpper:number; lambda:number; n:number;
-  rawCountScreen?:boolean|null;
+  rawCountScreen:boolean|null;
 }
 export interface BayesStrategyViewProps {
   strategies:BayesStrategyItem[];
