@@ -11,10 +11,10 @@ import type { Briefing } from "@/lib/services/briefing";
 import type { TomorrowCandidate } from "@/lib/services/candidates";
 
 function stageColor(stage: string): string {
-  if (stage === "高潮") return "bg-up";
-  if (stage === "升温" || stage === "回暖") return "bg-gold";
+  if (stage === "高潮") return "bg-[#8B98A7]";
+  if (stage === "升温" || stage === "回暖") return "bg-[#657384]";
   if (stage === "冰点") return "bg-dim";
-  return "bg-warn"; // 退潮 / 降温
+  return "bg-[#46525E]"; // 退潮 / 降温
 }
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "up" | "down" | "dim" }) {
@@ -131,7 +131,7 @@ export default function BriefingView() {
             {data.stage}
           </span>
           {delta !== null && (
-            <span className={`text-[12px] ${delta > 0 ? "text-up" : delta < 0 ? "text-down" : "text-dim"}`}>
+            <span className={`text-[12px] ${"text-fg2"}`}>
               较昨日 {delta > 0 ? "+" : ""}{delta.toFixed(1)}° {delta > 0 ? "↑" : delta < 0 ? "↓" : "→"}
             </span>
           )}
@@ -147,7 +147,7 @@ export default function BriefingView() {
           <div className="flex items-end gap-[3px]" style={{ height: 64 }}>
             {data.temperatureHistory.map((h) => {
               const pct = Math.max(6, Math.min(100, h.temperature));
-              const color = h.temperature >= 60 ? "bg-up" : h.temperature >= 40 ? "bg-gold" : "bg-dim";
+              const color = h.temperature >= 60 ? "bg-[#8B98A7]" : h.temperature >= 40 ? "bg-[#657384]" : "bg-dim";
               return (
                 <div key={h.tradeDate} className="group relative flex-1" style={{ height: "100%" }} title={`${h.tradeDate}  ${h.temperature.toFixed(1)}° ${h.stage}`}>
                   <div className={`absolute bottom-0 w-full rounded-t ${color}`} style={{ height: `${pct}%` }} />
@@ -165,7 +165,7 @@ export default function BriefingView() {
       )}
 
       {/* 市场概览 */}
-      <Card title="市场概览" icon={<TrendingUp className="h-3.5 w-3.5 text-up" />}>
+      <Card title="市场概览" icon={<TrendingUp className="h-3.5 w-3.5 text-primary" />}>
         <div className="mb-2 flex flex-wrap gap-2">
           {data.indices.map((ix) => (
             <div key={ix.name} className="rounded bg-subtle px-2 py-1.5">
@@ -193,7 +193,7 @@ export default function BriefingView() {
       {/* 主战法信号 */}
       <Card
         title={`主战法 · ${data.strategyName}`}
-        icon={data.strategyActive ? <Flame className="h-3.5 w-3.5 text-up" /> : <AlertTriangle className="h-3.5 w-3.5 text-dim" />}
+        icon={data.strategyActive ? <Flame className="h-3.5 w-3.5 text-primary" /> : <AlertTriangle className="h-3.5 w-3.5 text-dim" />}
         note={data.signalNote}
       >
         {!data.strategyActive ? (
@@ -272,7 +272,7 @@ export default function BriefingView() {
           return (
             <div key={kind} className="mb-3 last:mb-0">
               <div className="mb-1 flex items-baseline gap-2">
-                <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium text-white ${kind === "打板" ? "bg-up" : kind === "涨停后低吸" ? "bg-gold" : kind === "辨识度回踩" ? "bg-cool" : kind === "趋势" ? "bg-dim" : kind === "爆量洗盘" ? "bg-warn" : "bg-down"}`}>
+                <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium text-fg2 bg-muted`}>
                   {kind}
                 </span>
                 <span className="text-[11px] text-dim">{kindNote[kind]} · {list.length} 只</span>
@@ -288,7 +288,7 @@ export default function BriefingView() {
       </Card>
 
       {/* 明日应对 */}
-      <Card title="明日应对" icon={<CalendarClock className="h-3.5 w-3.5 text-up" />}>
+      <Card title="明日应对" icon={<CalendarClock className="h-3.5 w-3.5 text-primary" />}>
         <ul className="space-y-1 text-[12px] leading-relaxed">
           {data.tomorrowPlan.map((t, i) => (
             <li key={i} className="flex gap-1.5">
