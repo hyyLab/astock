@@ -44,7 +44,7 @@ function pct(x: number | null | undefined): string {
 }
 
 function RateBar({ rate, tone }: { rate: number; tone?: "up" | "warn" }) {
-  const color = tone === "warn" ? "bg-warn" : rate >= 0.25 ? "bg-up" : rate >= 0.15 ? "bg-gold" : "bg-dim";
+  const color = tone === "warn" ? "bg-dim" : rate >= 0.25 ? "bg-[#8B98A7]" : rate >= 0.15 ? "bg-[#657384]" : "bg-dim";
   return (
     <div className="h-1.5 w-full overflow-hidden rounded bg-subtle">
       <div className={`h-full rounded ${color}`} style={{ width: `${Math.min(100, rate * 100)}%` }} />
@@ -116,7 +116,7 @@ export default function StrategyView() {
       {/* 战法一：连板晋级率（强者恒强） */}
       <Card
         title="战法一 · 连板晋级率（强者恒强）"
-        icon={<TrendingUp className="h-3.5 w-3.5 text-up" />}
+        icon={<TrendingUp className="h-3.5 w-3.5 text-primary" />}
         note="口径：今天 N 连板的股票，明天晋级 N+1 板的比例。板数越高晋级率越高 → 妖股行情里「敢上高位」有统计支撑，但注意幸存者偏差：能走到高位的本身就是少数。"
       >
         <div className="space-y-2">
