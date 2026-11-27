@@ -31,7 +31,7 @@ export default function PromotionRates({ bundle }: { bundle: ReviewBundle }) {
       <div className="grid gap-x-8 gap-y-0 px-3.5 py-3 sm:grid-cols-2">
         {promos.map((p) => {
           const rate = Math.round(p.rate * 100);
-          const cls = rate >= 50 ? "bg-up" : rate >= 30 ? "bg-warn" : "bg-flat";
+          const cls = rate >= 50 ? "bg-[#8B98A7]" : rate >= 30 ? "bg-[#657384]" : "bg-flat";
           const open = openLevel === p.level;
           const { ok, failed } = promotedByLevel(p.fromBoard);
           return (
