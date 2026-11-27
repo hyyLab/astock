@@ -60,7 +60,7 @@ function ciText(lower: number | null, upper: number | null): string {
 }
 
 function boardLevel(level: string): number {
-  const match = level.match(/^(\\d+)/);
+  const match = level.match(/^(\d+)/);
   return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
 }
 
