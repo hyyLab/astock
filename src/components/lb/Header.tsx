@@ -34,6 +34,7 @@ export function parseHash(hash: string): Route {
   return { view: "today" };
 }
 
+/** 主导航唯一数据源（顶部横向导航） */
 const NAV_ITEMS: { key: Route["view"]; label: string; hash: string }[] = [
   { key: "today", label: "今日复盘", hash: "#/" },
   { key: "ladder", label: "连板天梯", hash: "#/ladder" },
@@ -42,13 +43,14 @@ const NAV_ITEMS: { key: Route["view"]; label: string; hash: string }[] = [
   { key: "volume", label: "爆量", hash: "#/volume" },
   { key: "volumehold", label: "爆量不跌", hash: "#/volume-hold" },
   { key: "anomaly", label: "异动监控", hash: "#/anomaly" },
+  { key: "dragon", label: "龙虎榜", hash: "#/dragon" },
   { key: "us", label: "美股映射", hash: "#/us" },
   { key: "strategy", label: "战法验证", hash: "#/strategy" },
   { key: "briefing", label: "作战简报", hash: "#/briefing" },
   { key: "stocks", label: "个股", hash: "#/stocks" },
 ];
 
-export default function Header({ route, navigation = true }: { route: Route; navigation?: boolean }) {
+export default function Header({ route }: { route: Route }) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [q, setQ] = useState("");
@@ -107,7 +109,6 @@ export default function Header({ route, navigation = true }: { route: Route; nav
           </span>
         </button>
 
-        {navigation && (
         <nav className="lb-scroll flex flex-1 items-center gap-0.5 overflow-x-auto text-[13px]" aria-label="主导航">
           {NAV_ITEMS.map((item) => {
             const active = route.view === item.key;
@@ -127,11 +128,10 @@ export default function Header({ route, navigation = true }: { route: Route; nav
             );
           })}
         </nav>
-        )}
 
         <ThemeToggle mounted={mounted} resolvedTheme={resolvedTheme} setTheme={setTheme} />
 
-        <div className="ml-auto w-full max-w-[440px] shrink min-w-[180px]" ref={boxRef}>
+        <div className="w-36 shrink-0 sm:w-48 md:w-56" ref={boxRef}>
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-dim" />
             <input
@@ -146,7 +146,7 @@ export default function Header({ route, navigation = true }: { route: Route; nav
               <Loader2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-dim" />
             )}
             {open && (
-              <div className="lb-scroll absolute right-0 top-9 z-50 max-h-72 w-72 overflow-y-auto rounded-[4px] border border-border bg-card shadow-lg shadow-black/5">
+              <div className="lb-scroll absolute right-0 top-11 z-50 max-h-72 w-72 overflow-y-auto rounded-[4px] border border-border bg-card shadow-lg shadow-black/5">
                 {results.length === 0 ? (
                   <div className="px-3 py-3 text-center text-xs text-dim">无匹配结果</div>
                 ) : (
@@ -175,12 +175,6 @@ export default function Header({ route, navigation = true }: { route: Route; nav
   );
 }
 
-/**
- * 明暗主题切换（克制：线性图标按钮）
- * 水合一致性：aria-label/title/图标必须统一由 mounted 门控——
- * SSR 时 resolvedTheme 为 undefined，而客户端首帧 next-themes 已能从 localStorage
- * 读出 "dark"，若属性直接读 resolvedTheme 会导致首帧属性不一致（React 19 水合警告）。
- */
 function ThemeToggle({
   mounted,
   resolvedTheme,
