@@ -43,7 +43,7 @@ export default function TomorrowOutlook({ bundle }: { bundle: ReviewBundle }) {
     const rate = Math.round(p12.rate * 100);
     items.push({
       tag: "接力",
-      tagCls: "bg-down-soft text-down",
+      tagCls: "bg-muted text-fg2",
       text:
         rate >= 40
           ? `首板晋级率 ${rate}%（${p12.promoted}/${p12.total}），2板接力正反馈，打板情绪偏积极`
@@ -75,7 +75,7 @@ export default function TomorrowOutlook({ bundle }: { bundle: ReviewBundle }) {
   if (market.limitDownCount > 0 || (compare.limitDown.yesterday ?? 0) > 0) {
     items.push({
       tag: "风险",
-      tagCls: "bg-up-soft text-up",
+      tagCls: "bg-muted text-fg2",
       text: `跌停 ${market.limitDownCount} 家（昨 ${compare.limitDown.yesterday ?? "—"}），断板池 ${
         bundle.yesterdayPerf.filter((r) => r.todayStatus !== "promoted" && r.todayStatus !== "suspended").length
       } 家待修复，高位股注意补跌风险`,
