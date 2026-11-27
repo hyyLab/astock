@@ -138,13 +138,17 @@ export function scheduleRegimeWeights(input:SchedulerInput,options:SchedulerOpti
       Math.abs(stored.reduce((a,b)=>a+b,0)-1)>1e-5)throw new Error("Invalid previous allocation");
     const previous=stored;
     if(input.independentSegmentSamples<off){
-      const weights=eq(n);return {weights,mode:"OFF",tradeTriggered:false,reviewTriggered:false,
-        reason:"独立样本少于 40：关闭",state:{...input.state,previousWeights:weights},fallback:false};
+      // OFF pauses new rebalances; it is not a liquidation instruction. Preserve
+      // the last executed allocation so re-enabling does not imply a hidden reset.
+      return {weights:previous,mode:"OFF",tradeTriggered:false,reviewTriggered:false,
+        reason:"独立样本少于 40：暂停调仓，保留上次实际权重",
+        state:{...input.state,previousWeights:previous},fallback:false};
     }
     if(input.independentSegmentSamples<shadow||!input.targetBeatsEqualWeight){
-      const weights=eq(n);return {weights,mode:"SHADOW",tradeTriggered:false,reviewTriggered:true,
-        reason:input.independentSegmentSamples<shadow?"独立样本 40–59：影子运行":"样本未跑赢等权：维持影子运行",
-        state:{...input.state,previousWeights:weights},fallback:false};
+      // SHADOW reviews evidence without executing trades or liquidating.
+      return {weights:previous,mode:"SHADOW",tradeTriggered:false,reviewTriggered:true,
+        reason:input.independentSegmentSamples<shadow?"独立样本 40–59：影子运行，保留上次实际权重":"样本未跑赢等权：影子运行，保留上次实际权重",
+        state:{...input.state,previousWeights:previous},fallback:false};
     }
     const t4Due=input.t4Triggered&&(input.state.lastReviewDay===null||
       input.dayIndex-input.state.lastReviewDay>=t4Days);
