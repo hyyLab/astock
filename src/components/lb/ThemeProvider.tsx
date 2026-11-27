@@ -1,6 +1,6 @@
 "use client";
 
-// 主题 Provider（next-themes）：class 策略，默认亮色，localStorage 记忆
+// 主题 Provider（next-themes）：class 策略，默认深色，localStorage 记忆
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import type { ReactNode } from "react";
 
