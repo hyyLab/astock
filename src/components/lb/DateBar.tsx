@@ -77,10 +77,10 @@ export default function DateBar({ bundle, onNav }: { bundle: DateBarBundle; onNa
           <span className="text-[12px] text-dim">{weekdayOf(bundle.tradeDate)}</span>
           <CalendarDays className="h-3.5 w-3.5 self-center text-dim" />
           {badge === "今日 · 盘中" ? (
-            <span className="flex items-center gap-1 rounded-[3px] bg-up-soft px-1.5 py-0.5 text-[11px] font-medium text-up">
+            <span className="flex items-center gap-1 rounded-[3px] bg-sidebar-accent px-1.5 py-0.5 text-[11px] font-medium text-fg2">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-up opacity-60" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-up" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-40" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
               </span>
               今日 · 盘中
             </span>
@@ -89,7 +89,7 @@ export default function DateBar({ bundle, onNav }: { bundle: DateBarBundle; onNa
           ) : badge === "最新" ? (
             <span className="rounded-[3px] bg-muted px-1.5 py-0.5 text-[11px] font-medium text-fg2">最新</span>
           ) : (
-            <span className="rounded-[3px] bg-warn-soft px-1.5 py-0.5 text-[11px] font-medium text-warn-strong">
+            <span className="rounded-[3px] bg-muted px-1.5 py-0.5 text-[11px] font-medium text-fg2">
               历史复盘
             </span>
           )}
