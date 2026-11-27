@@ -72,7 +72,7 @@ export function VolumeSurgeTable({ rows, compact = false }: { rows: VolumeSurgeR
               </td>
               <td className="whitespace-nowrap px-3.5 py-1.5 text-center">
                 {s.isLimitUp && (
-                  <span className="rounded-[2px] bg-up-soft px-1 text-[10px] leading-4 text-up">涨停</span>
+                  <span className="rounded-[2px] bg-muted px-1 text-[10px] leading-4 text-fg2">涨停</span>
                 )}
                 {s.isBroken && (
                   <span className="rounded-[2px] bg-muted px-1 text-[10px] leading-4 text-dim">炸板</span>
