@@ -26,8 +26,11 @@ interface FirstBoardTimeStat {
 }
 interface ReboundStat {
   total: number;
+  n: number;
   nextLimitUp: number;
   rate: number;
+  wilsonLower: number | null;
+  wilsonUpper: number | null;
 }
 interface SentimentTempStat {
   bucket: string;
@@ -211,7 +214,8 @@ export default function StrategyView() {
         <div className="flex items-baseline gap-3">
           <span className="text-2xl font-bold tabular-nums text-up">{pct(data.rebound.rate)}</span>
           <span className="text-[12px] text-dim">
-            反包股次日再涨停 {data.rebound.nextLimitUp}/{data.rebound.total}
+            反包股次日再涨停 {data.rebound.nextLimitUp}/{data.rebound.total} · n={data.rebound.n}
+            <span className="block text-[10px]">{ciText(data.rebound.wilsonLower, data.rebound.wilsonUpper)}</span>
           </span>
         </div>
       </Card>
