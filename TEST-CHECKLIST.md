@@ -258,7 +258,6 @@
   - `strategies` 按输入顺序 A、B、C。
   - `fdr.q=0.1`、`fdr.globalBaseline=0.5`、`fdr.fallback=false`、`fdr.reason=null`。
   - `fdr.selectedIds=["C"]`、`fdr.cutoffIndex=1`、`fdr.averageVAtCutoff=0.0020383695`（误差≤1e-6）。
-  - `warnings=[]`，表示本基准输入没有先验回退或无效桶警告。
 - **期望 strategies 完整字段：**
 
 | id | name | regime | rawWinRate | postMean | hdiLower | hdiUpper | lambda | n | posteriorAlpha | posteriorBeta | selected | noSignificantMarketDifference |
