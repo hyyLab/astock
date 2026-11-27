@@ -30,6 +30,7 @@
 
 import { db } from "@/lib/db";
 import { cachedTtl } from "@/lib/cache";
+import { EmptyDataError } from "@/lib/services/errors";
 import { fetchAllStockSnapshot, type TxRankRow } from "@/lib/market/tx";
 import { fetchAIndexQuotes, type AIndexQuote } from "@/lib/market/indexQuote";
 import { limitPctOf } from "@/lib/market/rules";
@@ -201,7 +202,7 @@ export async function getAnomaly(dateInput?: string): Promise<AnomalyData> {
   const today = bjDateStr();
   const session = sessionInfo();
   const dateRows = await db.dailyMarket.findMany({ orderBy: { tradeDate: "asc" }, select: { tradeDate: true } });
-  if (dateRows.length === 0) throw new Error("数据库为空，请先执行每日采集");
+  if (dateRows.length === 0) throw new EmptyDataError("数据库为空，请先执行每日采集");
   const eodDates = dateRows.map((r) => r.tradeDate);
   const latestEod = eodDates[eodDates.length - 1];
 

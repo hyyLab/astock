@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAnomaly } from "@/lib/services/anomaly";
+import { EmptyDataError } from "@/lib/services/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ export async function GET(req: NextRequest) {
     const data = await getAnomaly(date || undefined);
     return NextResponse.json(data);
   } catch (e) {
+    if (e instanceof EmptyDataError) return NextResponse.json({ error: e.message }, { status: 404 });
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
 }
