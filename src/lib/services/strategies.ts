@@ -27,8 +27,11 @@ export interface FirstBoardTimeStat {
 
 export interface ReboundStat {
   total: number;
+  n: number;
   nextLimitUp: number;
   rate: number;
+  wilsonLower: number | null;
+  wilsonUpper: number | null;
 }
 
 export interface SentimentTempStat {
@@ -194,10 +197,14 @@ export async function getStrategyBundle(): Promise<StrategyBundle> {
       if (nextLu.has(r.stockCode)) rbWin++;
     });
   }
+  const reboundCI = wilsonInterval(rbWin, rbTotal);
   const rebound: ReboundStat = {
     total: rbTotal,
+    n: rbTotal,
     nextLimitUp: rbWin,
     rate: rbTotal ? rbWin / rbTotal : 0,
+    wilsonLower: reboundCI?.lower ?? null,
+    wilsonUpper: reboundCI?.upper ?? null,
   };
 
   // 4) 情绪温度分层 -> 次日打板收益（昨日涨停今日均涨）
