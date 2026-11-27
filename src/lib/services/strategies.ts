@@ -124,33 +124,25 @@ export async function getStrategyBundle(): Promise<StrategyBundle> {
     });
   };
 
-  // 保留低位档；4板及以上先合并。若高位合并样本仍不足20，
-  // 逐步向下扩展合并范围，避免把极少数高板样本单独解释。
-  const maxBoard = sortedPromo.length ? sortedPromo[sortedPromo.length - 1][0] : 0;
-  let highStart = maxBoard >= 4 ? 4 : maxBoard + 1;
-  const sumFrom = (start: number) =>
-    sortedPromo
-      .filter(([board]) => board >= start)
-      .reduce(
-        (sum, [, stat]) => ({
-          total: sum.total + stat.total,
-          promoted: sum.promoted + stat.promoted,
-        }),
-        { total: 0, promoted: 0 },
-      );
-
-  if (maxBoard >= 4) {
-    while (highStart > 2 && sumFrom(highStart).total < 20) highStart--;
-  }
+  // 低位档正常展示；4板及以上若单档样本不足20，则将这些稀疏高位档合并。
+  // 样本充足的高位档仍单独展示，避免不必要地损失分层信息。
+  const sparseHigh = sortedPromo.filter(([board, stat]) => board >= 4 && stat.total < 20);
+  const sparseHighSet = new Set(sparseHigh.map(([board]) => board));
 
   for (const [board, stat] of sortedPromo) {
-    if (maxBoard >= 4 && board >= highStart) continue;
+    if (sparseHighSet.has(board)) continue;
     addPromotionStat(`${board}进${board + 1}`, stat.total, stat.promoted);
   }
 
-  if (maxBoard >= 4) {
-    const high = sumFrom(highStart);
-    addPromotionStat(`${highStart}板及以上`, high.total, high.promoted);
+  if (sparseHigh.length > 0) {
+    const merged = sparseHigh.reduce(
+      (sum, [, stat]) => ({
+        total: sum.total + stat.total,
+        promoted: sum.promoted + stat.promoted,
+      }),
+      { total: 0, promoted: 0 },
+    );
+    addPromotionStat("高位低样本合并", merged.total, merged.promoted);
   }
 
   // 2) 首板封板时间分层 -> 次日晋级率
