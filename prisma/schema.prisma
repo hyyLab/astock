@@ -53,9 +53,9 @@ model DailyMarket {
   sealRate       Float? // 封板率 = 涨停数 / (涨停数 + 炸板数)
   dataSource     String   @default("eastmoney+qq")
   createdAt      DateTime @default(now())
-  rowOrigin    String  @default("LIVE")
-  dataQuality  String  @default("GOOD")
-  fieldVersion String  @default("live-v1")
+rowOrigin    String  @default("LIVE")
+dataQuality  String  @default("GOOD")
+fieldVersion String  @default("live-v1")
 
 }
 
@@ -78,11 +78,11 @@ model DailyStock {
   isLimitUp      Boolean @default(false)
   isLimitDown    Boolean @default(false)
   isBroken       Boolean @default(false) // 曾触及涨停但未封住
+rowOrigin    String  @default("LIVE")
+dataQuality  String  @default("GOOD")
+fieldVersion String  @default("live-v1")
   @@unique([tradeDate, stockCode])
   @@index([stockCode])
-  rowOrigin    String  @default("LIVE")
-  dataQuality  String  @default("GOOD")
-  fieldVersion String  @default("live-v1")
 
 }
 
@@ -111,13 +111,12 @@ model LimitUp {
   isRebound      Boolean @default(false) // 是否反包（断板后再度涨停）
   themes         String? // JSON: 主线题材标签数组（规则归组，可跨行业，如 ["福建概念","医药"]）
   themeEvidence  String? // JSON: 新闻归类证据 [{theme,hits,title,media,time}]（个股新闻命中主线关键词）
+rowOrigin    String  @default("LIVE")
+dataQuality  String  @default("GOOD")
+fieldVersion String  @default("live-v1")
+  themesNewsEnriched String?
   @@unique([tradeDate, stockCode])
   @@index([stockCode])
-  rowOrigin    String  @default("LIVE")
-  dataQuality  String  @default("GOOD")
-  fieldVersion String  @default("live-v1")
-
-  themesNewsEnriched String?
 }
 
 // 5. board_history 连板历史（自主保留可追溯的每日状态）
@@ -131,11 +130,11 @@ model BoardHistory {
   isPromotion        Boolean
   isBreak            Boolean // 昨日涨停今日未涨停 => 断板
   isRebound          Boolean // 前日涨停、昨日断板、今日再涨停
+rowOrigin    String  @default("LIVE")
+dataQuality  String  @default("GOOD")
+fieldVersion String  @default("live-v1")
   @@unique([tradeDate, stockCode])
   @@index([stockCode])
-  rowOrigin    String  @default("LIVE")
-  dataQuality  String  @default("GOOD")
-  fieldVersion String  @default("live-v1")
 
 }
 
@@ -176,10 +175,10 @@ model DailyConcept {
   strengthScore Float // 强度分 0-100
   heatScore     Float? // 热度分 0-100
   members       String? // JSON: theme 行的成分股明细 [{code,name,industry,boardCount}]
+rowOrigin    String  @default("LIVE")
+dataQuality  String  @default("GOOD")
+fieldVersion String  @default("live-v1")
   @@unique([tradeDate, conceptName, kind])
-  rowOrigin    String  @default("LIVE")
-  dataQuality  String  @default("GOOD")
-  fieldVersion String  @default("live-v1")
 
 }
 
@@ -201,9 +200,9 @@ model SentimentDaily {
   sentimentStage       String // 冰点/修复/升温/高潮/极强
   upCount              Int?
   downCount            Int?
-  rowOrigin    String  @default("LIVE")
-  dataQuality  String  @default("GOOD")
-  fieldVersion String  @default("live-v1")
+rowOrigin    String  @default("LIVE")
+dataQuality  String  @default("GOOD")
+fieldVersion String  @default("live-v1")
 
 }
 
@@ -223,11 +222,11 @@ model BrokenLimit {
   floatMarketCap Float?
   industry       String?
   volumeRatio    Float? // 量比 = 当日成交量 / 前20日均量
+rowOrigin    String  @default("LIVE")
+dataQuality  String  @default("GOOD")
+fieldVersion String  @default("live-v1")
   @@unique([tradeDate, stockCode])
   @@index([stockCode])
-  rowOrigin    String  @default("LIVE")
-  dataQuality  String  @default("GOOD")
-  fieldVersion String  @default("live-v1")
 
 }
 
@@ -244,11 +243,11 @@ model LimitDown {
   continuousDays Int? // 连续跌停天数
   amount         Float?
   industry       String?
+rowOrigin    String  @default("LIVE")
+dataQuality  String  @default("GOOD")
+fieldVersion String  @default("live-v1")
   @@unique([tradeDate, stockCode])
   @@index([stockCode])
-  rowOrigin    String  @default("LIVE")
-  dataQuality  String  @default("GOOD")
-  fieldVersion String  @default("live-v1")
 
 }
 

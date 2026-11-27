@@ -20,6 +20,10 @@ async function emBars(stock:any){
 }
 async function main(){
  const [stocks,index]=await Promise.all([db.stockBasic.findMany({select:{stockCode:true,stockName:true,industry:true,listingDate:true},orderBy:{stockCode:"asc"}}),fetchIndexKline("sh000001",321)]);
+ const indexSeries=await Promise.all(["sz399001","sz399006","sh000688","sh000016","bj899050","sz399106"].map(code=>fetchIndexKline(code,321)));
+ const indexMaps=new Map(indexSeries.map(x=>[x.code,new Map(x.bars.map(b=>[b.date,b]))]));
+ const indexBar=(code:string,date:string)=>indexMaps.get(code)?.get(date);
+ const indexPrev=(code:string,date:string)=>{const a=indexSeries.find(x=>x.code===code)?.bars||[],i=a.findIndex(b=>b.date===date);return i>0?a[i-1]:undefined;};
  if(!stocks.length)throw Error("StockBasic empty; refusing full-market history run");
  const dates=index.bars.map(b=>b.date).filter(d=>d>=start&&d<=end);
  if(dates.length<30)throw Error("Index trading calendar unavailable/too short");
@@ -68,7 +72,10 @@ async function main(){
   const sent=calcSentiment({limitUpCount:r.zt.size,limitDownCount:r.dt.size,brokenCount:r.zb.size,highestBoard:highest,yesterdayLimitAvg:yavg,upCount:null,downCount:null});
   sd.push({tradeDate:d,limitUpCount:r.zt.size,limitDownCount:r.dt.size,brokenLimitCount:r.zb.size,sealRate:sealRateOf(r.zt.size,r.zb.size),brokenRate:brokenRateOf(r.zt.size,r.zb.size),highestBoard:highest,yesterdayLimitAvg:yavg,yesterdayCount:prevReturns.length,yesterdayRedCount:prevReturns.filter(x=>x>0).length,promotionDetails:JSON.stringify(chain.promotionsByDate.get(d)||[]),sentimentTemperature:sent.temperature,sentimentStage:sent.stage,upCount:null,downCount:null,rowOrigin:"BACKFILL",dataQuality:"MISSING",fieldVersion:"history-v2"});
   const idx=index.bars.findIndex(b=>b.date===d),ib=index.bars[idx],ip=index.bars[idx-1];
-  dm.push({tradeDate:d,shIndex:ib?.close??null,shChangePct:ip?round((ib.close/ip.close-1)*100):null,szIndex:null,szChangePct:null,cyIndex:null,cyChangePct:null,kcIndex:null,kcChangePct:null,sz50Index:null,sz50ChangePct:null,bz50Index:null,bz50ChangePct:null,totalAmount:null,upCount:null,downCount:null,flatCount:null,limitUpCount:r.zt.size,limitDownCount:r.dt.size,brokenCount:r.zb.size,sealRate:sealRateOf(r.zt.size,r.zb.size),dataSource:"eastmoney-push2his",rowOrigin:"BACKFILL",dataQuality:"MISSING",fieldVersion:"history-v2"});
+  const sz=indexBar("399001",d),cy=indexBar("399006",d),kc=indexBar("000688",d),sz50=indexBar("000016",d),bz50=indexBar("899050",d),szcomp=indexBar("399106",d);
+  const amount=(ib?.amount||0)+(szcomp?.amount||0);
+  const pct=(code:string,b:any)=>{const p=indexPrev(code,d);return b&&p?round((b.close/p.close-1)*100):null;};
+  dm.push({tradeDate:d,shIndex:ib?.close??null,shChangePct:ip?round((ib.close/ip.close-1)*100):null,szIndex:sz?.close??null,szChangePct:pct("399001",sz),cyIndex:cy?.close??null,cyChangePct:pct("399006",cy),kcIndex:kc?.close??null,kcChangePct:pct("000688",kc),sz50Index:sz50?.close??null,sz50ChangePct:pct("000016",sz50),bz50Index:bz50?.close??null,bz50ChangePct:pct("899050",bz50),totalAmount:amount>0?round(amount/1e8):null,upCount:null,downCount:null,flatCount:null,limitUpCount:r.zt.size,limitDownCount:r.dt.size,brokenCount:r.zb.size,sealRate:sealRateOf(r.zt.size,r.zb.size),dataSource:"eastmoney-push2his+qq",rowOrigin:"BACKFILL",dataQuality:"MISSING",fieldVersion:"history-v2"});
   const inputs=[...r.zt].map(code=>{const s=byCode.get(code),b=barsByCode.get(code)?.find(x=>x.date===d);return {stockCode:code,stockName:names.get(code)||code,industry:s?.industry||"",boardCount:states.get(code)?.boardCount||1,firstLimitTime:null,amount:b?.amount??null};});
   for(const c of buildConceptStats(inputs,[...r.zb].map(code=>({industry:byCode.get(code)?.industry||""}))))dc.push({tradeDate:d,...c,kind:"industry",rowOrigin:"BACKFILL",dataQuality:"MISSING",fieldVersion:"history-v2"});
   for(const t of buildThemeStats(inputs)){const o:any={...t};delete o.members;dc.push({tradeDate:d,...o,kind:"theme",members:JSON.stringify(t.members),rowOrigin:"BACKFILL",dataQuality:"MISSING",fieldVersion:"history-v2"});}
@@ -79,8 +86,15 @@ async function main(){
  console.log("[backfill] summary",summary);
  if(dry){console.log("[backfill] dry-run performed zero writes");return;}
  if(failed>Math.max(10,Math.ceil(stocks.length*.02)))throw Error("More than 2% stock fetch failures; refusing writes");
+ const preserveLiveFrom=target[Math.max(0,target.length-63)];
  for(const days of chunks(target,10))await db.$transaction(async tx=>{
   const where={tradeDate:{in:days},rowOrigin:"BACKFILL"};
+  const canonicalDays=days.filter(d=>d<preserveLiveFrom);
+  if(canonicalDays.length){
+   const old={tradeDate:{in:canonicalDays},rowOrigin:"LIVE"};
+   await tx.dailyStock.deleteMany({where:old});await tx.limitUp.deleteMany({where:old});await tx.brokenLimit.deleteMany({where:old});await tx.limitDown.deleteMany({where:old});
+   await tx.boardHistory.deleteMany({where:old});await tx.dailyConcept.deleteMany({where:old});await tx.sentimentDaily.deleteMany({where:old});await tx.dailyMarket.deleteMany({where:old});
+  }
   await tx.dailyStock.deleteMany({where});await tx.limitUp.deleteMany({where});await tx.brokenLimit.deleteMany({where});await tx.limitDown.deleteMany({where});await tx.boardHistory.deleteMany({where});await tx.dailyConcept.deleteMany({where});await tx.sentimentDaily.deleteMany({where});await tx.dailyMarket.deleteMany({where});await tx.marketRegimeTag.deleteMany({where:{tradeDate:{in:days}}});
   const put=async(model:any,rows:any[])=>{const selected=rows.filter(x=>days.includes(x.tradeDate));for(const part of chunks(selected,400))if(part.length)await model.createMany({data:part,skipDuplicates:true});};
   await put(tx.dailyStock,ds);await put(tx.limitUp,lu);await put(tx.brokenLimit,zb);await put(tx.limitDown,dt);await put(tx.boardHistory,bh);await put(tx.dailyConcept,dc);await put(tx.sentimentDaily,sd);await put(tx.dailyMarket,dm);await put(tx.marketRegimeTag,reg);
