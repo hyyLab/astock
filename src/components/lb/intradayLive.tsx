@@ -332,7 +332,7 @@ function SurgeTable({
                     <span className="font-medium text-foreground">{r.stockName}</span>
                     <span className="num ml-1.5 text-[11px] text-dim2">{r.stockCode}</span>
                     {r.isSealed && (
-                      <span className="ml-1 rounded-[2px] bg-up-soft px-1 text-[10px] leading-4 text-up">封板</span>
+                      <span className="ml-1 rounded-[2px] bg-muted px-1 text-[10px] leading-4 text-fg2">封板</span>
                     )}
                   </td>
                   <td className="px-2 py-1.5 text-center">
