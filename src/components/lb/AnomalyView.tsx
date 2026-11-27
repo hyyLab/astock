@@ -114,7 +114,7 @@ export default function AnomalyView() {
       <section className="panel">
         <div className="module-header">
           <h2 className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
-            <Activity className="h-4 w-4 text-up" />
+            <Activity className="h-4 w-4 text-primary" />
             {data?.liveMode ? "今日盘中 · 异动五维分组（实时）" : "全天复盘 · 异动五维分组"}
           </h2>
           {data && (
@@ -171,7 +171,7 @@ export default function AnomalyView() {
               key={t.key}
               onClick={() => setTab(t.key)}
               className={`rounded-[3px] px-2 py-1 text-[12px] transition-colors ${
-                tab === t.key ? "bg-up-soft font-medium text-up" : "text-muted-foreground hover:bg-muted"
+                tab === t.key ? "bg-sidebar-accent font-medium text-primary" : "text-muted-foreground hover:bg-muted"
               }`}
             >
               {t.label}
