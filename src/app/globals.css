@@ -67,6 +67,26 @@
   --color-link-soft-bg: var(--link-soft-bg);
 }
 
+/* Shared design tokens retained for existing components. */
+:root {
+  --radius: 14px;
+  --radius-tag: 5px;
+  --radius-button: 9px;
+  --radius-card: 14px;
+  --font-size-caption: 12px;
+  --font-size-table: 13px;
+  --font-size-body: 14px;
+  --font-size-module-title: 17px;
+  --font-size-page-title: 24px;
+  --font-size-kpi: 42px;
+  --space-unit: 4px;
+  --panel-padding: 20px;
+  --module-gap: 28px;
+  --font-inter: var(--font-manrope);
+  --font-geist-mono: var(--font-ibm-plex-mono);
+  --up-rgb: 240, 68, 82;
+}
+
 /* Default premium terminal: the original teal-on-dark identity remains available. */
 :root,
 .dark {
