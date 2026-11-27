@@ -67,7 +67,7 @@
   --color-link-soft-bg: var(--link-soft-bg);
 }
 
-/* ASTOCK terminal theme — high density, restrained surfaces, A-share red-up / green-down. */
+/* ASTOCK terminal theme — monochrome interface, restrained teal interaction, red/green reserved for market movement. */
 :root,
 .dark {
   color-scheme: dark;
@@ -82,52 +82,52 @@
   --font-size-body: 14px;
   --font-size-module-title: 16px;
   --font-size-page-title: 22px;
-  --font-size-kpi: 28px;
+  --font-size-kpi: 40px;
   --space-unit: 4px;
-  --panel-padding: 16px;
-  --module-gap: 20px;
+  --panel-padding: 20px;
+  --module-gap: 28px;
 
-  --background: #0B0F14;
+  --background: #090D12;
   --foreground: #E6EDF3;
-  --card: #18222D;
+  --card: #141C24;
   --card-foreground: #E6EDF3;
-  --popover: #18222D;
+  --popover: #141C24;
   --popover-foreground: #E6EDF3;
-  --sidebar: #111821;
+  --sidebar: #0D1319;
   --sidebar-foreground: #E6EDF3;
-  --sidebar-border: #243140;
-  --sidebar-ring: #409EFF;
+  --sidebar-border: #202B35;
+  --sidebar-ring: #83AFA8;
 
-  --primary: #409EFF;
-  --primary-foreground: #FFFFFF;
+  --primary: #83AFA8;
+  --primary-foreground: #07100F;
   --secondary: #111821;
   --secondary-foreground: #C3CDD8;
   --muted: #111821;
   --muted-foreground: #8B98A7;
   --accent: #243140;
   --accent-foreground: #E6EDF3;
-  --destructive: #F04452;
-  --border: #243140;
+  --destructive: #AAB5C0;
+  --border: #26323D;
   --input: #243140;
-  --ring: #409EFF;
+  --ring: #83AFA8;
 
-  --chart-1: #F04452;
-  --chart-2: #00B386;
-  --chart-3: #E6A23C;
-  --chart-4: #409EFF;
+  --chart-1: #8B98A7;
+  --chart-2: #657384;
+  --chart-3: #AAB5C0;
+  --chart-4: #83AFA8;
   --chart-5: #8B98A7;
 
-  --sidebar-primary: #409EFF;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #18222D;
+  --sidebar-primary: #83AFA8;
+  --sidebar-primary-foreground: #07100F;
+  --sidebar-accent: #1A252E;
   --sidebar-accent-foreground: #E6EDF3;
 
   --fg2: #C3CDD8;
   --dim: #8B98A7;
   --dim2: #657384;
-  --line: #243140;
-  --subtle: #111821;
-  --hover: #202D3A;
+  --line: #26323D;
+  --subtle: #10171E;
+  --hover: #202B35;
 
   --up: #F04452;
   --up-soft: rgba(240, 68, 82, 0.14);
@@ -136,16 +136,16 @@
   --down-soft: rgba(0, 179, 134, 0.14);
   --down-soft-bd: rgba(0, 179, 134, 0.35);
   --flat: #8B98A7;
-  --warn: #E6A23C;
-  --gold: #D6B15E;
-  --warn-strong: #E6A23C;
-  --warn-soft: rgba(230, 162, 60, 0.14);
-  --warn-soft-bd: rgba(230, 162, 60, 0.35);
-  --warn-bg: rgba(230, 162, 60, 0.06);
-  --link: #409EFF;
-  --link-strong: #69B1FF;
-  --link-soft: #409EFF;
-  --link-soft-bg: rgba(64, 158, 255, 0.14);
+  --warn: #AAB5C0;
+  --gold: #AAB5C0;
+  --warn-strong: #C3CDD8;
+  --warn-soft: rgba(139, 152, 167, 0.12);
+  --warn-soft-bd: rgba(139, 152, 167, 0.28);
+  --warn-bg: rgba(139, 152, 167, 0.05);
+  --link: #83AFA8;
+  --link-strong: #A6C9C3;
+  --link-soft: #83AFA8;
+  --link-soft-bg: rgba(131, 175, 168, 0.12);
   --up-rgb: 240, 68, 82;
 }
 
@@ -184,7 +184,22 @@
 .panel {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
+}
+
+.kpi-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+}
+
+.terminal-section-label {
+  color: var(--dim);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .module-header {
