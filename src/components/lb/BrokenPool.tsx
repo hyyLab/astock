@@ -15,7 +15,7 @@ export default function BrokenPool({ bundle }: { bundle: ReviewBundle }) {
 
   const statusTag = (status: string) => {
     if (status === "broken") return { text: "炸板", cls: "bg-warn-soft text-warn-strong border-warn-soft" };
-    if (status === "limitdown") return { text: "跌停", cls: "bg-down-soft text-down border-down-soft" };
+    if (status === "limitdown") return { text: "跌停", cls: "bg-muted text-fg2 border-border" };
     return { text: "断板", cls: "bg-muted text-muted-foreground border-line" };
   };
 
