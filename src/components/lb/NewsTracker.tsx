@@ -88,7 +88,7 @@ function NewsItemRow({ n, bundle, compact = false }: { n: NewsRow; bundle: Revie
                   <button
                     key={`${s.symbol}-${i}`}
                     onClick={() => (location.hash = `#/stock/${code}`)}
-                    className="rounded-[2px] border border-border bg-card px-1 leading-4 text-fg2 hover:border-up-soft hover:text-up"
+                    className="rounded-[2px] border border-border bg-card px-1 leading-4 text-fg2 hover:border-primary hover:text-primary"
                   >
                     {s.key}
                   </button>
