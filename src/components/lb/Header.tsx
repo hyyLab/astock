@@ -100,10 +100,10 @@ export default function Header({ route, navigation = true }: { route: Route; nav
           aria-label="返回今日复盘"
         >
           <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#34434D] bg-[#18232B] text-[14px] font-bold tracking-tight text-primary">
-            连
+            A
           </span>
           <span className="hidden text-[15px] font-semibold tracking-[0.14em] text-foreground sm:inline">
-            连板复盘
+            ASTOCK
           </span>
         </button>
 
@@ -118,7 +118,7 @@ export default function Header({ route, navigation = true }: { route: Route; nav
                 aria-current={active ? "page" : undefined}
                 className={`shrink-0 whitespace-nowrap border-b-2 px-2 py-1.5 transition-colors md:px-2.5 ${
                   active
-                    ? "border-up font-medium text-up"
+                    ? "border-primary font-semibold text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
