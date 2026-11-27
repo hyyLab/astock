@@ -1,13 +1,13 @@
 "use client";
 
 // 主题 Hook：暗/亮判定 + ECharts 专用调色板
-// CSS 变量类（text-dim 等）自动跟随主题；Canvas/SVG 内联色需要 JS 侧感知
+// Style B · Graphite Terminal — amber focus, red/green numbers only
 import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
 
 const emptySubscribe = () => () => {};
 
-/** 暗色判定（SSR/首次渲染前恒为 false，避免水合不一致；useSyncExternalStore 避开 setState-in-effect） */
+/** 暗色判定（SSR/首次渲染前恒为 false，避免水合不一致） */
 export function useIsDark(): boolean {
   const { resolvedTheme } = useTheme();
   const mounted = useSyncExternalStore(
@@ -37,36 +37,36 @@ export interface ChartPalette {
 
 export const CHART_LIGHT: ChartPalette = {
   tooltipBg: "#ffffff",
-  tooltipBorder: "#e6e8ec",
-  tooltipText: "#374151",
-  axisLine: "#e6e8ec",
-  axisLabel: "#9ca3af",
-  splitLine: "#f0f1f3",
-  zoomBorder: "#e6e8ec",
-  zoomBg: "#fafbfc",
-  zoomFiller: "rgba(217,53,47,0.08)",
-  zoomHandle: "#d4d7dd",
-  zoomText: "#9ca3af",
-  up: "#d9352f",
-  down: "#0e9663",
-  warn: "#e8850c",
+  tooltipBorder: "#e4e4e7",
+  tooltipText: "#3f3f46",
+  axisLine: "#e4e4e7",
+  axisLabel: "#a1a1aa",
+  splitLine: "#f4f4f5",
+  zoomBorder: "#e4e4e7",
+  zoomBg: "#fafafa",
+  zoomFiller: "rgba(217,119,6,0.08)",
+  zoomHandle: "#d4d4d8",
+  zoomText: "#a1a1aa",
+  up: "#dc2626",
+  down: "#16a34a",
+  warn: "#d97706",
 };
 
 export const CHART_DARK: ChartPalette = {
-  tooltipBg: "#1c2434",
-  tooltipBorder: "rgba(255,255,255,0.12)",
-  tooltipText: "#cbd2dc",
-  axisLine: "rgba(255,255,255,0.12)",
-  axisLabel: "#8b93a1",
-  splitLine: "rgba(255,255,255,0.07)",
-  zoomBorder: "rgba(255,255,255,0.12)",
-  zoomBg: "rgba(255,255,255,0.04)",
-  zoomFiller: "rgba(246,70,93,0.12)",
-  zoomHandle: "#5f6878",
-  zoomText: "#8b93a1",
-  up: "#f6465d",
-  down: "#0ecb81",
-  warn: "#f5a623",
+  tooltipBg: "#1c1c1f",
+  tooltipBorder: "rgba(255,255,255,0.1)",
+  tooltipText: "#d4d4d8",
+  axisLine: "rgba(255,255,255,0.1)",
+  axisLabel: "#71717a",
+  splitLine: "rgba(255,255,255,0.06)",
+  zoomBorder: "rgba(255,255,255,0.1)",
+  zoomBg: "rgba(255,255,255,0.03)",
+  zoomFiller: "rgba(251,191,36,0.12)",
+  zoomHandle: "#52525b",
+  zoomText: "#71717a",
+  up: "#f87171",
+  down: "#4ade80",
+  warn: "#fbbf24",
 };
 
 export function useChartPalette(): ChartPalette {
