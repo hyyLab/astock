@@ -108,9 +108,15 @@ function boundedStep(previous:number[],target:number[],step:number):number[]{
   return next;
 }
 function scheduleFallback(input:SchedulerInput,reason:string):SchedulerResult{
-  const weights=eq(input.targetWeights?.length??1);
+  const previous=input.state?.previousWeights;
+  const hasValidPrevious=Array.isArray(previous)&&previous.length>0&&
+    previous.every(v=>Number.isFinite(v)&&v>=0)&&
+    Math.abs(previous.reduce((sum,v)=>sum+v,0)-1)<=1e-5;
+  // A calculation fallback must not rewrite the last executed allocation:
+  // OFF means no trade, so keep the holdings anchor for the next scheduler call.
+  const weights=hasValidPrevious?[...previous]:eq(input.targetWeights?.length??1);
   return {weights,mode:"OFF",tradeTriggered:false,reviewTriggered:false,reason,
-    state:{...input.state,previousWeights:weights},fallback:true};
+    state:{...input.state},fallback:true};
 }
 
 /** Inner loop refreshes target daily; outer loop trades only on event/cooldown or T4 review. */
