@@ -56,7 +56,7 @@ export default function VolumeView() {
               key={t.key}
               onClick={() => setTab(t.key)}
               className={`rounded-[3px] px-2 py-1 text-[12px] transition-colors ${
-                tab === t.key ? "bg-up-soft font-medium text-up" : "text-muted-foreground hover:bg-muted"
+                tab === t.key ? "bg-sidebar-accent font-medium text-primary" : "text-muted-foreground hover:bg-muted"
               }`}
             >
               {t.label}
