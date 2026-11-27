@@ -74,14 +74,15 @@ export function estimateEmpiricalPrior(input: WinRateBucket[], options: Empirica
 
 /** Self-checks: lambda decreases with n, posterior is bounded, and large n approaches p_i. */
 export function runEmpiricalPriorSelfChecks(result: EmpiricalPriorResult, minMu=0, maxMu=1): void {
+  if(result.completeShrinkage) for(const b of result.buckets) {
+    if(Math.abs(b.lambda-1)>1e-12 || Math.abs(b.postMean-result.mu)>1e-12)
+      throw new Error("complete shrinkage requires lambda=1 and postMean=mu");
+  }
   const ordered=result.buckets.filter(b=>b.n>0).sort((a,b)=>a.n-b.n);
   for(let i=1;i<ordered.length;i++) if(ordered[i].lambda>ordered[i-1].lambda+1e-12)
     throw new Error("lambda must be non-increasing with n");
   for(const b of result.buckets) {
     if(b.postMean<minMu-1e-12 || b.postMean>maxMu+1e-12) throw new Error("postMean out of bounds");
-    if(result.completeShrinkage &&
-      (Math.abs(b.lambda-1)>1e-12 || Math.abs(b.postMean-result.mu)>1e-12))
-      throw new Error("complete shrinkage requires lambda=1 and postMean=mu");
     if(!result.completeShrinkage && b.n>=10000 && Math.abs(b.postMean-b.observedRate)>0.01)
       throw new Error("large-n posterior does not converge to observed rate");
   }
