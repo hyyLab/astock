@@ -281,7 +281,7 @@
 | id | name | regime | rawWinRate | postMean | hdiLower | hdiUpper | lambda | n | posteriorAlpha | posteriorBeta | rawCountScreen |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
 | A | 低胜率战法 | WARMING | 0.2 | 0.3012924071 | 0.1130408048 | 0.4829790610 | 0.3376413570 | 10 | 4.5487804878 | 10.5487804878 | false |
-| B | 中胜率战法 | WARMING | 0.5 | 0.5000000000 | 0.2944464851 | 0.7055535149 | 0.3376413570 | 10 | 7.5487804878 | 7.5487804878 | false | true |
+| B | 中胜率战法 | WARMING | 0.5 | 0.5000000000 | 0.2944464851 | 0.7055535149 | 0.3376413570 | 10 | 7.5487804878 | 7.5487804878 | false |
 | C | 高胜率战法 | WARMING | 0.8 | 0.6987075929 | 0.5170209388 | 0.8869591949 | 0.3376413570 | 10 | 10.5487804878 | 4.5487804878 | true |
 
 - **期望 fdr.results（注意排序是 v 从小到大，不是输入顺序）：**
@@ -297,7 +297,7 @@
   - FDR 使用自己的默认 Beta(1,1) 先验，因此 FDR 后验参数分别为 A=`Beta(3,9)`、B=`Beta(6,6)`、C=`Beta(9,3)`；不要把经验先验参数错误复用到 FDR。
   - 同 regime leave-one-out 基准：A 的 p0=(5+8)/20=0.65；B 的 p0=(2+8)/20=0.5；C 的 p0=(2+5)/20=0.35。
   - `v=P(theta<=p0|data)`，C 的 v 最小并通过 q=0.1 的首个累计均值门槛；加上 B 后平均 v=(0.0020383695+0.5)/2>0.1，因此只选 C。
-  - ``rawCountScreen` 只表达原始计数 FDR 筛选：`true` 入选、`false` 已参与但未入选、`null` 表示 FDR fallback 或未达到 minN；它不参与后验 `evidence()`，FDR 未入选也不等于证明无差异。
+  - `rawCountScreen` 只表达原始计数 FDR 筛选：`true` 入选、`false` 已参与但未入选、`null` 表示 FDR fallback 或未达到 minN；它不参与后验 `evidence()`，FDR 未入选也不等于证明无差异。
 - **代码位置：** `assemble.ts / assembleBayesStrategyViewData`；先验部分 `empirical-prior.ts / estimateEmpiricalPrior`；HDI `hdi.ts / betaHdi`；FDR `fdr.ts / selectBayesianFdr`。
 
 ### ASM-02：小样本战法仍展示，但不参与 FDR
@@ -320,7 +320,7 @@
   - FDR 的 `results` 不包含 D、E。
   - D、E 的 `rawCountScreen=null`（因为 n<5，未参与 FDR）；不能将其解释为 FDR 未入选。
   - A/B/C 是否入选只由这三个合格战法决定。
-- **代码位置：** `assemble.ts / assembleBayesStrategyViewData` 的 posteriorById、fdrInput 过滤和 noSignificantMarketDifference 映射。
+- **代码位置：** `assemble.ts / assembleBayesStrategyViewData` 的 posteriorById、fdrInput 过滤和 rawCountScreen 映射。
 
 ### ASM-03：每个 regime 单独拟合先验
 
@@ -344,8 +344,9 @@
 
 - **输入：** 使用三桶 A=(4,10)、B=(5,10)、C=(6,10)，使组内观测桶间方差小于二项噪声方差，得到 `vp<0`。
 - **期望：**
-  - `vpNonPositiveRegimes=["ICE"]`。
+  - `vpNonPositiveRegimes=["WARMING"]`（本用例 regime 设为 WARMING）。
   - `priorFallbackRegimes=[]`（这是 completeShrinkage，不是估计 fallback）。
+  - 输入组为 `{ regime: "WARMING", buckets: [{id:"A",wins:4,n:10},{id:"B",wins:5,n:10},{id:"C",wins:6,n:10}] }`。
   - 三个战法使用同一组 HDI 参数 `Beta(prior.alpha,prior.beta)`，因此三个 `hdiLower/hdiUpper` 必须完全相同；不能再把各自 wins 加回去制造区间差异。
   - 三个桶的 `rawCountScreen` 只反映原始计数 FDR 结果，不得改变后验判断；允许它与共同 HDI/完全收缩并存。
 - **代码位置：** `assemble.ts / assembleBayesStrategyViewData` 的 `prior.completeShrinkage ? prior.alpha : prior.alpha+bucket.wins` 分支。
@@ -370,9 +371,10 @@
 - [ ] EP-03：注入自检失败后保留结果并写 warning。
 - [ ] EP-04：fallback reason 不是硬编码通用文案。
 - [ ] EP-05：completeShrinkage 的共同均值。
+- [ ] EP-06：completeShrinkage 自检验证共同后验不变量。
 - [ ] FDR-01 至 FDR-05：minN、空 eligible、配置覆盖、fallback reason、leave-one-out。
 - [ ] RW-01 至 RW-08：事件步长、OFF/SHADOW 保留、regime 阈值、T4 不触发交易。
 - [ ] ASM-01：完整端到端字段和数值。
-- [ ] ASM-02 至 ASM-05：小样本、regime 隔离、重复 ID、完全收缩 HDI。
+- [ ] ASM-02 至 ASM-06：小样本、regime 隔离、重复 ID、完全收缩 HDI、自检警告传递。
 
 **报告要求：** 每项写“通过 / 失败 / 无法手算确认”；失败时附实际代码片段、手算过程和期望/实际差异。不要把未执行的测试标记为通过。
