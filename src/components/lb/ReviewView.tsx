@@ -43,27 +43,45 @@ export default function ReviewView({ initialDate }: { initialDate?: string }) {
   if (error || !bundle) return <ErrorState message={error ?? "未知错误"} onRetry={retry} />;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-8">
       {/* 交易日期（含交易日日历选择） */}
       <DateBar bundle={bundle} onNav={setDate} />
 
-      {/* 市场指数（辅助信息层） */}
-      <IndexStrip bundle={bundle} />
+      {/* 核心市场行情：指数与成交额先建立市场基准 */}
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-2 px-1">
+          <div>
+            <div className="terminal-section-label">MARKET SNAPSHOT</div>
+            <h2 className="mt-1 text-[17px] font-semibold tracking-tight text-foreground">主要指数</h2>
+          </div>
+          <span className="text-[11px] text-dim">指数涨跌与成交额</span>
+        </div>
+        <IndexStrip bundle={bundle} />
+      </section>
 
-      {/* 市场核心指标 + 今日/昨日对比 */}
-      <CoreMetrics bundle={bundle} />
+      {/* 核心指标：大数字优先，昨日变化作为辅助信息 */}
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-2 px-1">
+          <div>
+            <div className="terminal-section-label">MARKET BREADTH</div>
+            <h2 className="mt-1 text-[17px] font-semibold tracking-tight text-foreground">市场关键指标</h2>
+          </div>
+          <span className="text-[11px] text-dim">与上一交易日对比</span>
+        </div>
+        <CoreMetrics bundle={bundle} />
+      </section>
 
-      {/* 情绪周期 */}
-      <SentimentCycle bundle={bundle} />
-
-      {/* 娑撹崵鍤庢０妯绘綏 */}
-      <MainThemes bundle={bundle} />
+      {/* 情绪周期与主线题材 */}
+      <section className="space-y-5">
+        <SentimentCycle bundle={bundle} />
+        <MainThemes bundle={bundle} />
+      </section>
 
       {/* 今日涨停池 */}
       <LimitUpPool bundle={bundle} pageSize={10} />
 
       {/* 市场宽度 + 昨日涨停表现 */}
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-5 md:grid-cols-2">
         <MarketBreadth bundle={bundle} />
         <YesterdayPerf bundle={bundle} />
       </div>
@@ -75,7 +93,7 @@ export default function ReviewView({ initialDate }: { initialDate?: string }) {
       <BrokenPool bundle={bundle} />
 
       {/* 爆量 + 主线追踪（实时要闻/研判/受益标的） */}
-      <div className="grid gap-3 xl:grid-cols-[7fr_5fr]">
+      <div className="grid gap-5 xl:grid-cols-[7fr_5fr]">
         <VolumeSurge bundle={bundle} />
         <NewsTracker bundle={bundle} />
       </div>
