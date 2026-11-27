@@ -44,9 +44,9 @@ export default function MarketBreadth({ bundle }: { bundle: ReviewBundle }) {
 
             {/* 强弱比例条 */}
             <div className="mt-2 flex h-2 w-full overflow-hidden rounded-full" title={`上涨 ${upPct.toFixed(1)}% / 下跌 ${downPct.toFixed(1)}%`}>
-              <div className="bg-up transition-[width] duration-300" style={{ width: `${upPct}%` }} />
+              <div className="bg-[#8B98A7] transition-[width] duration-300" style={{ width: `${upPct}%` }} />
               <div className="bg-line" style={{ width: `${flatPct}%` }} />
-              <div className="bg-down transition-[width] duration-300" style={{ width: `${downPct}%` }} />
+              <div className="bg-[#46525E] transition-[width] duration-300" style={{ width: `${downPct}%` }} />
             </div>
             <div className="num mt-1 flex justify-between text-[10px] tabular-nums text-dim2">
               <span>{upPct.toFixed(0)}%</span>
