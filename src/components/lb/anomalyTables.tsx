@@ -289,7 +289,7 @@ export function LeaderTable({ rows }: { rows: LeaderRow[] }) {
               <td className="whitespace-nowrap px-3.5 py-1.5">
                 <span
                   className={`rounded-[2px] px-1 text-[10px] leading-4 ${
-                    r.scope === "market" ? "bg-warn-soft text-warn-strong" : "bg-link-soft-bg text-link-strong"
+                    r.scope === "market" ? "bg-muted text-fg2" : "bg-muted text-fg2"
                   }`}
                 >
                   {r.scope === "market" ? "市场总龙头" : "题材龙头"}
@@ -404,7 +404,7 @@ export function PriorSurgeTable({ rows }: { rows: PriorSurgeRow[] }) {
                 {r.surgeVolumeRatio.toFixed(1)}
                 {r.surgeCount >= 2 && (
                   <span
-                    className="ml-1 rounded-[2px] bg-up-soft px-1 text-[10px] font-normal leading-4 text-up"
+                    className="ml-1 rounded-[2px] bg-muted px-1 text-[10px] font-normal leading-4 text-fg2"
                     title={`窗口内爆量 ${r.surgeCount} 次（峰值量比 ${r.maxVolumeRatio.toFixed(1)}）`}
                   >
                     {r.surgeCount}次
