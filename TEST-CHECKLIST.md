@@ -105,7 +105,7 @@
 
 ### EP-05：completeShrinkage 的共同均值
 
-- **输入：** 三个 bucket：`[{id:"A",wins:0,n:10},{id:"B",wins:5,n:10},{id:"C",wins:10,n:10}]`。
+- **输入：** 三个 bucket：`[{id:"A",wins:4,n:10},{id:"B",wins:5,n:10},{id:"C",wins:6,n:10}]`。
 - **期望：** `vp<0`，所以 `completeShrinkage=true`；`mu=0.5`；所有 bucket 的 `postMean=0.5`、`lambda=1`。
 - **代码位置：** `empirical-prior.ts / estimateEmpiricalPrior` 的 completeShrinkage 分支。
 
