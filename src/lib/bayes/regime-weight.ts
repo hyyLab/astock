@@ -13,11 +13,19 @@ export interface RegimeMembershipResult {
 export interface SchedulerState { lastTradeDay:number|null; lastReviewDay:number|null; previousWeights:number[] }
 export interface SchedulerInput {
   dayIndex:number; regime:RegimeName; probabilities:Record<RegimeName,number>;
-  targetWeights:number[]; independentSegmentSamples:number; targetBeatsEqualWeight:boolean;
+  /** Legacy/upstream-selected target; used when no confident regime-specific target is supplied. */
+  targetWeights:number[];
+  /** Optional targets keyed by the already-confirmed regime. */
+  targetWeightsByRegime?:Partial<Record<RegimeName,number[]>>;
+  independentSegmentSamples:number; targetBeatsEqualWeight:boolean;
   eventTriggered:boolean; t4Triggered:boolean; state:SchedulerState;
 }
 export interface SchedulerOptions {
-  cooldownDays?:number; t4ReviewDays?:number; maxDailyStep?:number;
+  cooldownDays?:number; t4ReviewDays?:number;
+  /** Maximum allocation change per executed rebalance event (not per calendar day). */
+  maxRebalanceStep?:number;
+  /** @deprecated Use maxRebalanceStep; retained for compatibility. */
+  maxDailyStep?:number;
   hardFloorOff?:number; hardFloorShadow?:number;
 }
 export interface SchedulerResult {
@@ -107,15 +115,20 @@ function scheduleFallback(input:SchedulerInput,reason:string):SchedulerResult{
 
 /** Inner loop refreshes target daily; outer loop trades only on event/cooldown or T4 review. */
 export function scheduleRegimeWeights(input:SchedulerInput,options:SchedulerOptions={}):SchedulerResult{
-  const cooldown=options.cooldownDays??5,t4Days=options.t4ReviewDays??20,step=options.maxDailyStep??.03;
+  const cooldown=options.cooldownDays??5,t4Days=options.t4ReviewDays??20;
+  const step=options.maxRebalanceStep??options.maxDailyStep??.03;
   const off=options.hardFloorOff??40,shadow=options.hardFloorShadow??60;
   try{
-    const n=input.targetWeights.length;
-    if(!Number.isInteger(input.dayIndex)||n<1||input.targetWeights.some(x=>!Number.isFinite(x)||x<0)||
+    const regimeTarget=input.targetWeightsByRegime?.[input.regime];
+    // A regime-specific target is adopted only when the supplied regime posterior
+    // gives the confirmed regime at least 50% membership; otherwise use upstream target.
+    const target=regimeTarget&&input.probabilities[input.regime]>=0.5?regimeTarget:input.targetWeights;
+    const n=target.length;
+    if(!Number.isInteger(input.dayIndex)||n<1||target.some(x=>!Number.isFinite(x)||x<0)||
       !Number.isInteger(input.independentSegmentSamples)||input.independentSegmentSamples<0||
       !Number.isInteger(cooldown)||cooldown<0||!Number.isInteger(t4Days)||t4Days<1||
       !(step>0)||!(off>=0&&shadow>off))throw new Error("Invalid scheduler arguments");
-    if(Math.abs(input.targetWeights.reduce((a,b)=>a+b,0)-1)>1e-6)throw new Error("Target must sum to one");
+    if(Math.abs(target.reduce((a,b)=>a+b,0)-1)>1e-6)throw new Error("Target must sum to one");
     const probabilityValues=REGIMES.map(r=>input.probabilities[r]);
     if(probabilityValues.some(v=>!Number.isFinite(v)||v<0)||
       Math.abs(probabilityValues.reduce((a,b)=>a+b,0)-1)>1e-5||
@@ -138,7 +151,7 @@ export function scheduleRegimeWeights(input:SchedulerInput,options:SchedulerOpti
     const eventDue=input.eventTriggered&&(input.state.lastTradeDay===null||
       input.dayIndex-input.state.lastTradeDay>=cooldown);
     const review=t4Due||eventDue;
-    const proposedWeights=boundedStep(previous,normalize(input.targetWeights),step);
+    // The 0.03 cap is applied once per executed rebalance event. Calendar days\n    // without an event never accumulate step capacity: slow, event-driven moves\n    // avoid reacting to noisy daily target fluctuations.\n    const proposedWeights=boundedStep(previous,normalize(target),step);
     return {weights:proposedWeights,mode:"ACTIVE",tradeTriggered:eventDue,reviewTriggered:review,
       reason:t4Due?"T4 距上次复核至少 20 日：强制复核":
         eventDue?"事件触发且冷却期结束":"每日刷新目标，不触发交易",
