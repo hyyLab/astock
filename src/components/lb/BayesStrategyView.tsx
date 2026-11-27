@@ -4,16 +4,15 @@ import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { FlaskConical, Info, ArrowDown, ArrowUp, Minus } from "lucide-react";
 
-export type BayesEvidenceLevel = "INSUFFICIENT" | "WATCH" | "SUFFICIENT" | "NO_DIFFERENCE";
+export type BayesEvidenceLevel = "INSUFFICIENT" | "WATCH" | "SUFFICIENT";
 export interface BayesStrategyItem {
   id:string; name:string; regime:string; rawWinRate:number; postMean:number;
   hdiLower:number; hdiUpper:number; lambda:number; n:number;
-  noSignificantMarketDifference?:boolean;
-  selected?:boolean;
+  rawCountScreen?:boolean|null;
 }
 export interface BayesStrategyViewProps {
   strategies:BayesStrategyItem[];
-  vpNonPositive:boolean;
+  vpNonPositiveRegimes:string[];
   activeRegime?:string|null;
   onRegimeChange?:(regime:string|null)=>void;
   regimes?:string[];
@@ -24,12 +23,11 @@ export interface BayesStrategyViewProps {
 }
 const pct=(x:number)=>(x*100).toFixed(1)+"%";
 const labels:Record<BayesEvidenceLevel,string>={
-  INSUFFICIENT:"样本不足",WATCH:"待观察",SUFFICIENT:"证据充分",NO_DIFFERENCE:"与大盘无显著差异"
+  INSUFFICIENT:"样本不足",WATCH:"待观察",SUFFICIENT:"证据充分"
 };
 function evidence(item:BayesStrategyItem,t:{
   insufficientLambda:number;watchLambda:number;sufficientLambda:number;sufficientHdiLower:number;
 }):BayesEvidenceLevel{
-  if(item.noSignificantMarketDifference)return "NO_DIFFERENCE";
   if(item.n<5||item.lambda>=t.insufficientLambda)return "INSUFFICIENT";
   if(item.lambda>=t.watchLambda)return "WATCH";
   if(item.lambda<=t.sufficientLambda&&item.hdiLower>=t.sufficientHdiLower)return "SUFFICIENT";
@@ -41,7 +39,7 @@ function Card({children}:{children:ReactNode}){
 
 /** Pure presentation: caller supplies posterior data; this component never calls an API. */
 export default function BayesStrategyView(props:BayesStrategyViewProps){
-  const {strategies,vpNonPositive,onRegimeChange,regimes=[]}=props;
+  const {strategies,vpNonPositiveRegimes,onRegimeChange,regimes=[]}=props;
   const [localRegime,setLocalRegime]=useState<string|null>(null);
   const selected=props.activeRegime===undefined?localRegime:props.activeRegime;
   const cfg={
@@ -51,6 +49,7 @@ export default function BayesStrategyView(props:BayesStrategyViewProps){
     sufficientHdiLower:props.thresholds?.sufficientHdiLower??.5
   };
   const options=regimes.length?regimes:Array.from(new Set(strategies.map(x=>x.regime)));
+  const visibleShrinkageRegimes=vpNonPositiveRegimes.filter(regime=>selected===null||regime===selected);
   const rows=useMemo(()=>strategies.filter(x=>selected===null||x.regime===selected)
     .slice().sort((a,b)=>b.hdiLower-a.hdiLower),[strategies,selected]);
   const change=(value:string|null)=>{
@@ -64,10 +63,10 @@ export default function BayesStrategyView(props:BayesStrategyViewProps){
       </h2>
       <span className="text-[11px] text-dim">按 HDI 下界排序 · 后验数据由父组件传入</span>
     </div>
-    {vpNonPositive&&<div className="flex items-start gap-2 rounded border border-border bg-subtle p-3 text-[12px] text-dim">
+    {visibleShrinkageRegimes.length>0&&<div className="flex items-start gap-2 rounded border border-border bg-subtle p-3 text-[12px] text-dim">
       <Info className="mt-0.5 h-4 w-4 shrink-0"/>
-      <div><div className="font-medium text-foreground">桶间差异证据不足：完全收缩</div>
-        <p className="mt-0.5">当前 v_p ≤ 0，战法间暂不区分，后验胜率收缩至总体胜率。可切换 regime 查看分层结果。</p>
+      <div><div className="font-medium text-foreground">桶间差异证据不足：完全收缩（{visibleShrinkageRegimes.join("、")}）</div>
+        <p className="mt-0.5">这些 regime 的经验先验无法识别桶间差异，桶后验使用共同先验。原始计数 FDR 是独立探索性筛选，不代表收缩后验已区分战法。</p>
       </div>
     </div>}
     <Card><div className="flex flex-wrap items-center gap-2 text-[12px]">
@@ -96,9 +95,13 @@ export default function BayesStrategyView(props:BayesStrategyViewProps){
               </span>
             </div><div className="text-[10px] text-dim">HDI {pct(item.hdiLower)}–{pct(item.hdiUpper)}</div></div>
           </div>
-          <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-dim">
-            <span>{item.selected?"FDR 入选 · ":""}{labels[level]}</span><span>收缩系数 λ={item.lambda.toFixed(2)}</span>
+          <div className="mt-1 grid grid-cols-2 gap-2 text-[10px] text-dim">
+            <div><span className="font-medium text-foreground">后验判断：</span>{labels[level]}</div>
+            <div><span className="font-medium text-foreground">原始计数 FDR（探索性）：</span>
+              {item.rawCountScreen===true?"入选":item.rawCountScreen===false?"未入选":"未评估"}
+            </div>
           </div>
+          <div className="mt-1 text-right text-[10px] text-dim">收缩系数 λ={item.lambda.toFixed(2)}</div>
         </div>;
       })}</div>}
     </Card>
