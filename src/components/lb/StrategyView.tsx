@@ -100,7 +100,7 @@ interface StrategyBundle {
   bayes: {
     strategies: BayesStrategyItem[];
     regimes: string[];
-    vpNonPositive: boolean;
+    vpNonPositiveRegimes: string[];
     warnings: string[];
     regimeClassification: string;
     allocationMode: string;
@@ -235,7 +235,7 @@ export default function StrategyView() {
       </div>
 
       <section className="rounded border border-border bg-card p-3">
-        <BayesStrategyView strategies={data.bayes.strategies} vpNonPositive={data.bayes.vpNonPositive} regimes={data.bayes.regimes} />
+        <BayesStrategyView strategies={data.bayes.strategies} vpNonPositiveRegimes={data.bayes.vpNonPositiveRegimes} regimes={data.bayes.regimes} />
         <div className="mt-3 border-t border-border pt-2 text-[11px] text-dim">
           <div className="font-medium">联合后验与权重优化（影子模式）</div>
           <p>优化目标权重：{data.bayes.strategies.map((item, index) => `${item.name} ${(data.bayes.optimization.targetWeights[index] * 100).toFixed(1)}%`).join(" · ")}</p>
