@@ -9,11 +9,11 @@ import { pctClass } from "./format";
 import { RefreshCw, Globe2 } from "lucide-react";
 
 const DIRECTION_META: Record<UsThemeGroup["direction"], { text: string; cls: string; tip: string }> = {
-  strong: { text: "隔夜强势", cls: "bg-up-soft text-up", tip: "关注 A 股对应主线竞价高开与承接力度" },
+  strong: { text: "隔夜强势", cls: "bg-muted text-fg2", tip: "关注 A 股对应主线竞价高开与承接力度" },
   up: { text: "隔夜偏强", cls: "bg-warn-soft text-warn-strong", tip: "对应主线或有情绪传导，留意开盘量能" },
   flat: { text: "隔夜平淡", cls: "bg-muted text-dim", tip: "传导效应有限，按 A 股自身节奏观察" },
-  down: { text: "隔夜偏弱", cls: "bg-down-soft text-down", tip: "对应主线或承压，注意低开后的承接" },
-  weak: { text: "隔夜大跌", cls: "bg-down-soft text-down", tip: "警惕对应主线情绪退潮风险" },
+  down: { text: "隔夜偏弱", cls: "bg-muted text-fg2", tip: "对应主线或承压，注意低开后的承接" },
+  weak: { text: "隔夜大跌", cls: "bg-muted text-fg2", tip: "警惕对应主线情绪退潮风险" },
 };
 
 function GroupBlock({ g }: { g: UsThemeGroup }) {
@@ -58,7 +58,7 @@ function GroupBlock({ g }: { g: UsThemeGroup }) {
               <button
                 key={b.stockCode}
                 onClick={() => (location.hash = `#/stock/${b.stockCode}`)}
-                className="num rounded-[3px] border border-border bg-card px-1.5 py-0.5 text-[11px] text-fg2 hover:border-up-soft hover:text-up"
+                className="num rounded-[3px] border border-border bg-card px-1.5 py-0.5 text-[11px] text-fg2 hover:border-primary hover:text-primary"
                 title={`${b.industry ?? ""} · 涨幅 ${b.changePct.toFixed(2)}%`}
               >
                 <span className="font-medium">{b.stockName}</span>
