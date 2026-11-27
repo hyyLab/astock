@@ -10,26 +10,26 @@ import { api, type IntradayData, type IntradayEventKind, type IntradaySurgeRow }
 import { pctClass, fmtPct, fmtYi, fmtNum } from "./format";
 
 const KIND_META: Record<IntradayEventKind, { label: string; cls: string }> = {
-  surge_resonance: { label: "共振拉升", cls: "bg-up-soft text-up" },
+  surge_resonance: { label: "共振拉升", cls: "bg-muted text-fg2" },
   surge_counter: { label: "逆势拉升", cls: "bg-link-soft-bg text-link-strong" },
-  surge: { label: "快速拉升", cls: "bg-up-soft text-up" },
-  dive: { label: "快速跳水", cls: "bg-down-soft text-down" },
-  seal: { label: "封板", cls: "bg-up-soft text-up" },
+  surge: { label: "快速拉升", cls: "bg-muted text-fg2" },
+  dive: { label: "快速跳水", cls: "bg-muted text-fg2" },
+  seal: { label: "封板", cls: "bg-muted text-fg2" },
   unseal: { label: "炸板", cls: "bg-warn-soft text-warn-strong" },
   volume: { label: "分时爆量", cls: "bg-warn-soft text-warn-strong" },
 };
 
 const SURGE_TYPE_META = {
-  resonance: { label: "共振", cls: "bg-up-soft text-up" },
+  resonance: { label: "共振", cls: "bg-muted text-fg2" },
   counter: { label: "逆势", cls: "bg-link-soft-bg text-link-strong" },
   independent: { label: "独立", cls: "bg-muted text-dim" },
 } as const;
 
 const PREV_STATUS_META = {
-  limitup: { label: "涨停", cls: "bg-up-soft text-up" },
-  surging: { label: "拉升", cls: "bg-up-soft text-up" },
+  limitup: { label: "涨停", cls: "bg-muted text-fg2" },
+  surging: { label: "拉升", cls: "bg-muted text-fg2" },
   holding: { label: "守住", cls: "bg-muted text-muted-foreground" },
-  floor_broken: { label: "跌破", cls: "bg-down-soft text-down" },
+  floor_broken: { label: "跌破", cls: "bg-muted text-fg2" },
 } as const;
 
 type Tab = "feed" | "surge" | "sector" | "leader" | "prev" | "dive";
@@ -89,12 +89,12 @@ export default function IntradayLive() {
       {/* 头部 */}
       <div className="module-header">
         <h2 className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
-          <Radio className="h-4 w-4 text-up" /> 盘中实时异动
+          <Radio className="h-4 w-4 text-primary" /> 盘中实时异动
         </h2>
         {data?.hasData && (
           <span className="flex items-center gap-2 text-[11px] text-dim">
             <span
-              className={`inline-block h-1.5 w-1.5 rounded-full ${isTrading ? "animate-pulse bg-up" : "bg-flat"}`}
+              className={`inline-block h-1.5 w-1.5 rounded-full ${isTrading ? "animate-pulse bg-primary" : "bg-flat"}`}
               title={isTrading ? "交易时段，每 2 分钟自动采样" : "非交易时段，展示最近交易日记录"}
             />
             {data.session.label}
@@ -175,7 +175,7 @@ export default function IntradayLive() {
                 key={t.key}
                 onClick={() => setTab(t.key)}
                 className={`rounded-[3px] px-2 py-1 text-[12px] transition-colors ${
-                  tab === t.key ? "bg-up-soft font-medium text-up" : "text-muted-foreground hover:bg-muted"
+                  tab === t.key ? "bg-sidebar-accent font-medium text-primary" : "text-muted-foreground hover:bg-muted"
                 }`}
               >
                 {t.label}
@@ -291,7 +291,7 @@ function SurgeTable({
             key={key}
             onClick={() => onFilter(key)}
             className={`rounded-[3px] px-2 py-0.5 text-[11px] transition-colors ${
-              filter === key ? "bg-up-soft font-medium text-up" : "text-muted-foreground hover:bg-muted"
+              filter === key ? "bg-sidebar-accent font-medium text-primary" : "text-muted-foreground hover:bg-muted"
             }`}
           >
             {label}
@@ -406,7 +406,7 @@ function SectorBlocks({ data }: { data: IntradayData }) {
               <span className="num text-dim2">{s.memberCount} 只联动</span>
               <span className={`num font-medium ${pctClass(s.avgWindow)}`}>均值 {fmtPct(s.avgWindow)}</span>
               <span className="ml-auto text-[11px] text-dim2">
-                领涨 <span className="font-medium text-up">{s.leaderName}</span>
+                领涨 <span className="font-medium text-fg2">{s.leaderName}</span>
               </span>
             </div>
             {isOpen && (
@@ -421,7 +421,7 @@ function SectorBlocks({ data }: { data: IntradayData }) {
                     className="rounded-[3px] border border-line bg-card px-1.5 py-0.5 text-[11px] transition-colors hover:bg-hover"
                     title={`${m.stockCode}${m.isSealed ? " · 封板" : ""}${m.themes.length ? ` · ${m.themes.join("/")}` : ""}`}
                   >
-                    <span className={m.isSealed ? "font-medium text-up" : "text-fg2"}>{m.stockName}</span>
+                    <span className={m.isSealed ? "font-medium text-fg2" : "text-fg2"}>{m.stockName}</span>
                     <span className={`num ml-1 ${pctClass(m.windowPct)}`}>{fmtPct(m.windowPct)}</span>
                   </button>
                 ))}
@@ -466,7 +466,7 @@ function LeaderTable({ data }: { data: IntradayData }) {
               key={l.stockCode}
               onClick={() => (location.hash = `#/stock/${l.stockCode}`)}
               className={`cursor-pointer border-b border-line transition-colors last:border-0 hover:bg-hover ${
-                marketCodes.has(l.stockCode) ? "bg-up-soft/40" : ""
+                marketCodes.has(l.stockCode) ? "bg-sidebar-accent" : ""
               }`}
             >
               <td className="px-3.5 py-1.5">
@@ -475,7 +475,7 @@ function LeaderTable({ data }: { data: IntradayData }) {
                     l.boardNow >= 3
                       ? "bg-warn-soft text-warn-strong"
                       : l.boardNow === 2
-                        ? "bg-up-soft text-up"
+                        ? "bg-muted text-fg2"
                         : "bg-muted text-muted-foreground"
                   }`}
                   title={`昨日 ${l.boardYesterday} 板`}
@@ -483,7 +483,7 @@ function LeaderTable({ data }: { data: IntradayData }) {
                   {l.boardNow}板
                 </span>
                 {marketCodes.has(l.stockCode) && (
-                  <span className="ml-1 rounded-[2px] bg-up px-1 text-[10px] leading-4 text-white">市场最高</span>
+                  <span className="ml-1 rounded-[2px] bg-muted px-1 text-[10px] leading-4 text-fg2">市场最高</span>
                 )}
               </td>
               <td className="whitespace-nowrap px-2 py-1.5">
