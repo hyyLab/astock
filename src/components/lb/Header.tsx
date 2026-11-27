@@ -92,17 +92,17 @@ export default function Header({ route, navigation = true }: { route: Route; nav
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-card">
-      <div className="mx-auto flex h-12 w-full max-w-[1440px] items-center gap-2 px-3 md:gap-5 md:px-6">
+    <header className="sticky top-0 z-40 border-b border-border bg-[#0D1319]/95 backdrop-blur-sm">
+      <div className="mx-auto flex h-16 w-full max-w-[1800px] items-center gap-4 px-4 md:gap-6 md:px-8">
         <button
           onClick={() => nav("#/")}
           className="flex shrink-0 items-center gap-2"
           aria-label="返回今日复盘"
         >
-          <span className="flex h-6 w-6 items-center justify-center rounded-[4px] bg-up text-[12px] font-bold text-white">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#34434D] bg-[#18232B] text-[14px] font-bold tracking-tight text-primary">
             连
           </span>
-          <span className="hidden text-[14px] font-bold tracking-wide text-foreground sm:inline">
+          <span className="hidden text-[15px] font-semibold tracking-[0.14em] text-foreground sm:inline">
             连板复盘
           </span>
         </button>
@@ -131,7 +131,7 @@ export default function Header({ route, navigation = true }: { route: Route; nav
 
         <ThemeToggle mounted={mounted} resolvedTheme={resolvedTheme} setTheme={setTheme} />
 
-        <div className="w-32 shrink-0 sm:w-48 md:w-56" ref={boxRef}>
+        <div className="ml-auto w-full max-w-[440px] shrink min-w-[180px]" ref={boxRef}>
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-dim" />
             <input
@@ -140,7 +140,7 @@ export default function Header({ route, navigation = true }: { route: Route; nav
               onFocus={() => results.length > 0 && setOpen(true)}
               placeholder="搜索代码 / 名称"
               aria-label="搜索股票"
-              className="h-8 w-full rounded-[4px] border border-border bg-subtle pl-8 pr-8 text-[13px] text-foreground placeholder:text-dim focus:border-link-soft focus:bg-card focus:outline-none"
+              className="h-10 w-full rounded-lg border border-border bg-[#111921] pl-9 pr-8 text-[13px] text-foreground placeholder:text-dim focus:border-primary focus:bg-card focus:outline-none focus:ring-1 focus:ring-primary/30"
             />
             {searching && (
               <Loader2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-dim" />
@@ -196,7 +196,7 @@ function ThemeToggle({
       onClick={() => setTheme(dark ? "light" : "dark")}
       aria-label={dark ? "切换到亮色主题" : "切换到暗色主题"}
       title={dark ? "切换到亮色主题" : "切换到暗色主题"}
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] border border-border text-fg2 transition-colors hover:bg-muted"
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-fg2 transition-colors hover:bg-muted hover:text-primary"
     >
       {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>
