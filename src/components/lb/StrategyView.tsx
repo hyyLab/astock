@@ -9,14 +9,20 @@ import { RefreshCw, FlaskConical, TrendingUp, Clock, Flame, Repeat } from "lucid
 interface PromotionStat {
   level: string;
   total: number;
+  n: number;
   promoted: number;
   rate: number;
+  wilsonLower: number | null;
+  wilsonUpper: number | null;
 }
 interface FirstBoardTimeStat {
   bucket: string;
   total: number;
+  n: number;
   promoted: number;
   rate: number;
+  wilsonLower: number | null;
+  wilsonUpper: number | null;
 }
 interface ReboundStat {
   total: number;
@@ -26,6 +32,11 @@ interface ReboundStat {
 interface SentimentTempStat {
   bucket: string;
   days: number;
+  n: number;
+  positiveDays: number;
+  positiveDayRate: number | null;
+  wilsonLower: number | null;
+  wilsonUpper: number | null;
   avgNextLimitAvg: number | null;
 }
 interface StrategyBundle {
@@ -41,6 +52,38 @@ interface StrategyBundle {
 
 function pct(x: number | null | undefined): string {
   return x === null || x === undefined ? "-" : (x * 100).toFixed(1) + "%";
+}
+
+function ciText(lower: number | null, upper: number | null): string {
+  if (lower === null || upper === null) return "Wilson 95% CI：-";
+  return "Wilson 95% CI：" + pct(lower) + "–" + pct(upper);
+}
+
+function boardLevel(level: string): number {
+  const match = level.match(/^(\\d+)/);
+  return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
+}
+
+function promotionTrend(stats: PromotionStat[]): string {
+  const eligible = stats.filter((item) => item.n >= 20).sort((a, b) => boardLevel(a.level) - boardLevel(b.level));
+  if (eligible.length < 2) return "样本不足：至少需要两个 n≥20 的板数档位才能比较趋势";
+  const nonDecreasing = eligible.every((item, index) => index === 0 || item.rate >= eligible[index - 1].rate);
+  const nonIncreasing = eligible.every((item, index) => index === 0 || item.rate <= eligible[index - 1].rate);
+  if (nonDecreasing && !nonIncreasing) return "在 n≥20 的可比较档位中，晋级率随板数整体上升（描述性结果）";
+  if (nonIncreasing && !nonDecreasing) return "在 n≥20 的可比较档位中，晋级率随板数整体下降（描述性结果）";
+  if (nonDecreasing && nonIncreasing) return "在 n≥20 的可比较档位中，各档晋级率相同";
+  return "在 n≥20 的可比较档位中，晋级率未呈现稳定单调关系";
+}
+
+function highestEligible<T extends { n: number; rate: number; bucket: string }>(stats: T[]): T | null {
+  return stats.filter((item) => item.n >= 20).sort((a, b) => b.rate - a.rate)[0] ?? null;
+}
+
+function describeObservedRange<T extends { n: number; bucket: string }>(stats: T[], getValue: (item: T) => number | null): string {
+  const eligible = stats.filter((item) => item.n >= 20 && getValue(item) !== null);
+  if (eligible.length < 2) return "样本不足：少于两个 n≥20 的档位，暂不比较";
+  const sorted = [...eligible].sort((a, b) => (getValue(b) ?? -Infinity) - (getValue(a) ?? -Infinity));
+  return "观测值最高为" + sorted[0].bucket + "，最低为" + sorted[sorted.length - 1].bucket + "（描述性比较，不代表统计显著）";
 }
 
 function RateBar({ rate, tone }: { rate: number; tone?: "up" | "warn" }) {
@@ -98,8 +141,12 @@ export default function StrategyView() {
       </div>
     );
 
-  const bestTime = [...data.firstBoardTime].sort((a, b) => b.rate - a.rate)[0];
-  const strongPromo = data.promotion.filter((p) => p.level !== "1进2");
+  const bestTime = highestEligible(data.firstBoardTime);
+  const promoNote = promotionTrend(data.promotion);
+  const timeNote = bestTime
+    ? "在 n≥20 的档位中，" + bestTime.bucket + "观察到的晋级率最高（" + pct(bestTime.rate) + "）。"
+    : "样本不足：当前没有 n≥20 的封板时间档位，不作结论。";
+  const sentimentNote = describeObservedRange(data.sentimentTemp, (item) => item.avgNextLimitAvg);
 
   return (
     <div className="space-y-3">
@@ -117,7 +164,7 @@ export default function StrategyView() {
       <Card
         title="战法一 · 连板晋级率（强者恒强）"
         icon={<TrendingUp className="h-3.5 w-3.5 text-up" />}
-        note="口径：今天 N 连板的股票，明天晋级 N+1 板的比例。板数越高晋级率越高 → 妖股行情里「敢上高位」有统计支撑，但注意幸存者偏差：能走到高位的本身就是少数。"
+        note={"口径：今天 N 连板的股票，明天晋级 N+1 板的比例。" + promoNote + "；n<20 的档位仅展示观察值，不作趋势结论；高位样本不足时已合并展示。"}
       >
         <div className="space-y-2">
           {data.promotion.map((p) => (
@@ -126,6 +173,8 @@ export default function StrategyView() {
               <RateBar rate={p.rate} />
               <span className="w-28 shrink-0 text-right tabular-nums text-dim">
                 {p.promoted}/{p.total} = <span className={p.rate >= 0.3 ? "text-up font-medium" : ""}>{pct(p.rate)}</span>
+                <span className="block text-[10px]">n={p.n} · {ciText(p.wilsonLower, p.wilsonUpper)}</span>
+                {p.n < 20 && <span className="block text-[10px]">样本不足，不作结论</span>}
               </span>
             </div>
           ))}
@@ -136,15 +185,17 @@ export default function StrategyView() {
       <Card
         title="战法二 · 首板封板时间分层"
         icon={<Clock className="h-3.5 w-3.5 text-gold" />}
-        note={`口径：首板（今天第一个涨停）按首次封板时间分层，统计次日晋级 2 板的比例。当前结论：${bestTime.bucket}封板的首板晋级率最高（${pct(bestTime.rate)}）——早盘板是主力资金态度，尾盘板多为偷袭。`}
+        note={"口径：首板按首次封板时间分层，统计次日晋级 2 板的比例。" + timeNote + "不对样本量不足的档位作结论。"}
       >
         <div className="space-y-2">
           {data.firstBoardTime.map((b) => (
             <div key={b.bucket} className="flex items-center gap-2 text-[12px]">
               <span className="w-20 shrink-0">{b.bucket}</span>
-              <RateBar rate={b.rate} tone={b.bucket === bestTime.bucket ? "up" : "warn"} />
+              <RateBar rate={b.rate} tone={bestTime?.bucket === b.bucket ? "up" : "warn"} />
               <span className="w-28 shrink-0 text-right tabular-nums text-dim">
-                {b.promoted}/{b.total} = <span className={b.bucket === bestTime.bucket ? "text-up font-medium" : ""}>{pct(b.rate)}</span>
+                {b.promoted}/{b.total} = <span className={bestTime?.bucket === b.bucket ? "text-up font-medium" : ""}>{pct(b.rate)}</span>
+                <span className="block text-[10px]">n={b.n} · {ciText(b.wilsonLower, b.wilsonUpper)}</span>
+                {b.n < 20 && <span className="block text-[10px]">样本不足，不作结论</span>}
               </span>
             </div>
           ))}
@@ -169,7 +220,7 @@ export default function StrategyView() {
       <Card
         title="战法四 · 情绪温度 → 次日打板收益"
         icon={<Flame className="h-3.5 w-3.5 text-warn" />}
-        note="口径：按当日情绪温度分层，统计次日「昨日涨停股平均涨幅」（即无脑打板次日卖出的平均收益）。温度越高打板正收益越明显 → 情绪冰点别打板。"
+        note={"口径：按当日情绪温度分层，统计次日昨日涨停股平均涨幅。正收益日比例附 Wilson 95% 区间；均值和档位比较仅作描述性观察。" + sentimentNote + "；n<20 的档位不作结论。"}
       >
         <div className="grid grid-cols-3 gap-2">
           {data.sentimentTemp.map((t) => (
@@ -178,7 +229,10 @@ export default function StrategyView() {
               <div className={`text-lg font-bold tabular-nums ${(t.avgNextLimitAvg ?? 0) > 0 ? "text-up" : "text-down"}`}>
                 {t.avgNextLimitAvg === null ? "-" : t.avgNextLimitAvg.toFixed(2) + "%"}
               </div>
-              <div className="text-[10px] text-dim">{t.days} 个交易日</div>
+              <div className="text-[10px] text-dim">n={t.n} 个交易日</div>
+              <div className="text-[10px] text-dim">正收益日 {t.positiveDays}/{t.n} · {pct(t.positiveDayRate)}</div>
+              <div className="text-[10px] text-dim">{ciText(t.wilsonLower, t.wilsonUpper)}</div>
+              {t.n < 20 && <div className="text-[10px] text-dim">样本不足，不作结论</div>}
             </div>
           ))}
         </div>
@@ -211,12 +265,9 @@ export default function StrategyView() {
         </div>
       </Card>
 
-      {strongPromo.length > 0 && (
-        <p className="px-1 text-[11px] leading-relaxed text-dim">
-          一句话总结：高位晋级率 &gt; 低位（强者恒强）、早盘首板 &gt; 尾盘首板（时间即态度）、温度高时打板 &gt; 冰点打板（情绪即仓位）。
-          样本只有 {data.dayCount} 个交易日，等采集跑满一个季度再来验证一轮。
-        </p>
-      )}
+      <p className="px-1 text-[11px] leading-relaxed text-dim">
+        当前数据摘要：{promoNote}；{timeNote}；情绪温度分层：{sentimentNote}。统计窗口为 {data.dayCount} 个交易日；所有结论均为描述性观察，需在更长样本和样本外数据中复核。
+      </p>
     </div>
   );
 }
