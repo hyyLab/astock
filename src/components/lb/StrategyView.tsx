@@ -191,7 +191,7 @@ export default function StrategyView() {
         note={"口径：首板按首次封板时间分层，统计次日晋级 2 板的比例。" + timeNote + "不对样本量不足的档位作结论。"}
       >
         <div className="space-y-2">
-          {data.firstBoardTime.map((b) => (
+          {data.firstBoardTime.filter((b) => b.n > 0).map((b) => (
             <div key={b.bucket} className="flex items-center gap-2 text-[12px]">
               <span className="w-20 shrink-0">{b.bucket}</span>
               <RateBar rate={b.rate} tone={bestTime?.bucket === b.bucket ? "up" : "warn"} />
