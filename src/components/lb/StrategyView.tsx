@@ -4,7 +4,7 @@
 // 数据口径全部透明：样本数、统计窗口直接展示，不搞黑箱
 
 import { useEffect, useState } from "react";
-import { RefreshCw, FlaskConical, TrendingUp, Clock, Flame, Repeat } from "lucide-react";
+import { RefreshCw, FlaskConical, TrendingUp, Clock, Flame, Repeat, Shield, Target } from "lucide-react";
 
 interface PromotionStat {
   level: string;
@@ -42,6 +42,49 @@ interface SentimentTempStat {
   wilsonUpper: number | null;
   avgNextLimitAvg: number | null;
 }
+interface SealStrengthBucketStat {
+  bucket: string;
+  n: number;
+  signalN: number;
+  dayN: number;
+  highOpenN: number;
+  highOpenRate: number | null;
+  highOpenDayWilson: { successes: number; trials: number; low: number; high: number } | null;
+  avgNextClosePremiumPct: number | null;
+  maxDrawdownPct: number | null;
+  worstNextLowPct: number | null;
+  conclusion: string | null;
+}
+interface SealStrengthBacktest {
+  asOf: string;
+  dayCount: number;
+  signalCount: number;
+  validSampleCount: number;
+  missingNextBarCount: number;
+  strengthDefinition: string;
+  bucketMethod: string;
+  metricDefinition: string;
+  statisticalNote: string;
+  buckets: SealStrengthBucketStat[];
+}
+interface SectorGroupMetrics {
+  n: number;
+  highOpenRate: number | null;
+  highOpenWilson: { low: number; high: number } | null;
+  highOpenSuccesses: number;
+  avgClosePremiumPct: number | null;
+  avgMaxDrawdownPct: number | null;
+  conclusionReady: boolean;
+}
+interface SectorFirstSealBundle {
+  asOf: string;
+  dayCount: number;
+  eventCount: number;
+  firstSeal: SectorGroupMetrics;
+  followers: SectorGroupMetrics;
+  closePremiumSpreadPct: number | null;
+  note: string;
+}
 interface StrategyBundle {
   asOf: string;
   dayCount: number;
@@ -51,6 +94,8 @@ interface StrategyBundle {
   rebound: ReboundStat;
   sentimentTemp: SentimentTempStat[];
   yesterdayPerf: { tradeDate: string; avgPct: number; redCount: number | null; totalCount: number | null }[];
+  sealStrength: SealStrengthBacktest;
+  sectorFirstSeal: SectorFirstSealBundle;
 }
 
 function pct(x: number | null | undefined): string {
@@ -60,6 +105,19 @@ function pct(x: number | null | undefined): string {
 function ciText(lower: number | null, upper: number | null): string {
   if (lower === null || upper === null) return "Wilson 95% CI：-";
   return "Wilson 95% CI：" + pct(lower) + "–" + pct(upper);
+}
+
+// 已经以“百分点”表达的数值（如收盘溢价、回撤），不再乘 100
+function signedPct(x: number | null | undefined): string {
+  return x === null || x === undefined ? "-" : (x >= 0 ? "+" : "") + x.toFixed(2) + "%";
+}
+
+function ciRange(ci: { low: number; high: number } | null): string {
+  return ci ? "Wilson 95% CI：" + pct(ci.low) + "–" + pct(ci.high) : "Wilson 95% CI：-";
+}
+
+function signTone(x: number | null | undefined): string {
+  return x === null || x === undefined ? "text-dim" : x >= 0 ? "text-up" : "text-down";
 }
 
 function boardLevel(level: string): number {
@@ -240,6 +298,71 @@ export default function StrategyView() {
               {t.n < 20 && <div className="text-[10px] text-dim">样本不足，不作结论</div>}
             </div>
           ))}
+        </div>
+      </Card>
+
+      {/* 战法五：封单相对强度 */}
+      <Card
+        title="战法五 · 封单相对强度"
+        icon={<Shield className="h-3.5 w-3.5 text-up" />}
+        note={"口径：T 日首板按当日封单额/流通市值等频分为 Q1–Q4，统计 T+1 高开率与收盘溢价；有效样本 " + data.sealStrength.validSampleCount + "，缺失 T+1 行情 " + data.sealStrength.missingNextBarCount + "。n<20 不写结论；Wilson 区间按交易日聚类，非个股高开率区间。"}
+      >
+        <div className="space-y-2">
+          {data.sealStrength.buckets.map((b) => (
+            <div key={b.bucket} className="rounded border border-border bg-subtle p-2">
+              <div className="flex items-center gap-2 text-[12px]">
+                <span className="w-44 shrink-0 font-medium">{b.bucket}</span>
+                <RateBar rate={b.highOpenRate ?? 0} tone={b.n >= 20 ? "up" : undefined} />
+                <span className="w-24 shrink-0 text-right tabular-nums text-dim">
+                  高开 {pct(b.highOpenRate)} · {b.highOpenN}/{b.n}
+                </span>
+              </div>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-dim">
+                <span>信号 n={b.signalN} · 有效 n={b.n} · {b.dayN} 个交易日</span>
+                <span>次日收盘溢价 <span className={signTone(b.avgNextClosePremiumPct)}>{signedPct(b.avgNextClosePremiumPct)}</span></span>
+                <span>次日最低最差 {signedPct(b.worstNextLowPct)}</span>
+                <span>净值最大回撤 {b.maxDrawdownPct === null ? "-" : b.maxDrawdownPct.toFixed(2) + "%"}</span>
+                <span>{ciRange(b.highOpenDayWilson)}</span>
+              </div>
+              {b.conclusion && <div className="mt-1 text-[10px] text-up">{b.conclusion}</div>}
+              {b.n < 20 && <div className="mt-1 text-[10px] text-dim">有效样本 n&lt;20，不作结论</div>}
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* 战法六：题材首封 vs 跟风 */}
+      <Card
+        title="战法六 · 题材首封 vs 跟风"
+        icon={<Target className="h-3.5 w-3.5 text-gold" />}
+        note={"口径：同一交易日同一题材中最先封板的个股为「首封」，其余有效封板时间为「跟风」；跟风先事件内平均再汇总，分析单元为 (交易日, 题材)。" + data.sectorFirstSeal.note}
+      >
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { label: "题材首封", m: data.sectorFirstSeal.firstSeal },
+            { label: "同题材跟风", m: data.sectorFirstSeal.followers },
+          ].map(({ label, m }) => (
+            <div key={label} className="rounded border border-border bg-subtle p-2">
+              <div className="text-[11px] text-dim">{label} · 事件 n={m.n}</div>
+              <div className="mt-1 flex items-center gap-2">
+                <RateBar rate={m.highOpenRate ?? 0} tone={label === "题材首封" ? "up" : undefined} />
+                <span className="shrink-0 text-[12px] tabular-nums">高开 {pct(m.highOpenRate)}</span>
+              </div>
+              <div className="mt-1 text-[10px] text-dim">{ciRange(m.highOpenWilson)}</div>
+              <div className="mt-1 text-[12px] tabular-nums">
+                次日收盘溢价 <span className={signTone(m.avgClosePremiumPct)}>{signedPct(m.avgClosePremiumPct)}</span>
+              </div>
+              <div className="text-[10px] text-dim">开盘后最大回撤 {signedPct(m.avgMaxDrawdownPct)}</div>
+              {!m.conclusionReady && <div className="mt-1 text-[10px] text-dim">n&lt;20，不写结论</div>}
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 text-[12px] text-dim">
+          首封相对跟风收盘溢价差：
+          <span className={`font-medium ${signTone(data.sectorFirstSeal.closePremiumSpreadPct)}`}>
+            {signedPct(data.sectorFirstSeal.closePremiumSpreadPct)}
+          </span>
+          （百分点，事件数 {data.sectorFirstSeal.eventCount}）
         </div>
       </Card>
 

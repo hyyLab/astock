@@ -4,6 +4,14 @@
 // ============================================================
 
 import { db as prisma } from "@/lib/db";
+import {
+  getSealStrengthBacktest,
+  type SealStrengthBacktest,
+} from "@/lib/services/strategySealStrength";
+import {
+  getSectorFirstSealBundle,
+  type SectorFirstSealBundle,
+} from "@/lib/services/strategySectorFirstSeal";
 
 export interface PromotionStat {
   level: string; // "1进2" "2进3" 或合并后的高板档
@@ -54,6 +62,8 @@ export interface StrategyBundle {
   rebound: ReboundStat; // 反包战法
   sentimentTemp: SentimentTempStat[]; // 情绪温度分层打板收益
   yesterdayPerf: { tradeDate: string; avgPct: number; redCount: number | null; totalCount: number | null }[];
+  sealStrength: SealStrengthBacktest; // 封单相对强度（首板按当日封单强度分层）
+  sectorFirstSeal: SectorFirstSealBundle; // 题材首封 vs 跟风
 }
 
 function wilsonInterval(successes: number, trials: number): { lower: number; upper: number } | null {
@@ -73,10 +83,12 @@ function wilsonInterval(successes: number, trials: number): { lower: number; upp
 }
 
 export async function getStrategyBundle(): Promise<StrategyBundle> {
-  const [bh, lu, sd] = await Promise.all([
+  const [bh, lu, sd, sealStrength, sectorFirstSeal] = await Promise.all([
     prisma.boardHistory.findMany({ orderBy: { tradeDate: "asc" } }),
     prisma.limitUp.findMany({ orderBy: { tradeDate: "asc" } }),
     prisma.sentimentDaily.findMany({ orderBy: { tradeDate: "asc" } }),
+    getSealStrengthBacktest(),
+    getSectorFirstSealBundle(),
   ]);
 
   const dates = [...new Set(bh.map((r) => r.tradeDate))].sort();
@@ -252,5 +264,7 @@ export async function getStrategyBundle(): Promise<StrategyBundle> {
     rebound,
     sentimentTemp,
     yesterdayPerf,
+    sealStrength,
+    sectorFirstSeal,
   };
 }
