@@ -83,5 +83,11 @@ export function selectBayesianFdr(input:FdrStrategy[],options:BayesianFdrOptions
     ranked.forEach((x,i)=>{x.rank=i+1;x.selected=i<cutoffIndex;});
     return {q,selectedIds:ranked.filter(x=>x.selected).map(x=>x.id),cutoffIndex,
       averageVAtCutoff,globalBaseline,results:ranked,fallback:false};
-  }catch{return empty;}
+  }catch{
+    const safeResults=Array.isArray(input)?input.filter(valid).map(x=>({
+      id:x.id,regime:x.regime,wins:x.wins,n:x.n,p0:0.5,
+      posteriorAlpha:1,posteriorBeta:1,v:0.5,selected:false,rank:0
+    })):[];
+    return {...empty,results:safeResults,fallback:true};
+  }
 }
