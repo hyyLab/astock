@@ -35,7 +35,7 @@ async function main(){
  let failed=0,priceMismatch=0,corporateInvalid=0,listingSkipped=0;
  for(const x of results){
   if(x.error||!x.em.length||!x.qq.length){failed++;continue;}
-  const qq=new Map(x.qq.map((b:any)=>[b.date,b])),bars=x.em.filter((b:any)=>ruleDates.includes(b.date)).filter((b:any)=>{
+  const qq=new Map(x.qq.map((b:any)=>[b.date,b] as const)),bars=x.em.filter((b:any)=>ruleDates.includes(b.date)).filter((b:any)=>{
    const q:any=qq.get(b.date);if(!q)return false;
    const diff=Math.max(Math.abs(b.open-q.open),Math.abs(b.high-q.high),Math.abs(b.low-q.low),Math.abs(b.close-q.close))/Math.max(b.close,.01);
    if(diff>.005){priceMismatch++;return false;}return true;
@@ -51,7 +51,7 @@ async function main(){
  const ztMap=new Map(ruleDates.map(d=>[d,rosters.get(d).zt] as const)),chain=computeBoardChain(ruleDates,ztMap,names),byCode=new Map(stocks.map(s=>[s.stockCode,s] as const));
  const ds:any[]=[],lu:any[]=[],zb:any[]=[],dt:any[]=[],bh:any[]=[],sd:any[]=[],dm:any[]=[],dc:any[]=[],reg:any[]=[];
  for(const d of target){
-  const r=rosters.get(d),states=chain.byDate.get(d);
+  const r=rosters.get(d),states=chain.byDate.get(d) ?? new Map<string, import("@/lib/calc/board").BoardState>();
   for(const code of new Set([...r.zt,...r.zb,...r.dt])){
    const bars=barsByCode.get(code)||[],i=bars.findIndex(b=>b.date===d);if(i<1)continue;const b=bars[i],p=bars[i-1],status=detectBarStatus(code,names.get(code)||code,p.close,b);if(!status)continue;
    ds.push({tradeDate:d,stockCode:code,open:b.open,high:b.high,low:b.low,close:b.close,prevClose:p.close,changePct:round(b.changePct),volume:b.volume,amount:b.amount>0?b.amount:null,turnoverRate:b.turnoverRate>0?b.turnoverRate:null,floatMarketCap:null,volumeRatio:volumeRatio(bars,i),isLimitUp:status==="limitUp",isLimitDown:status==="limitDown",isBroken:status==="broken",rowOrigin:"BACKFILL",dataQuality:"MISSING",fieldVersion:"history-v2"});
