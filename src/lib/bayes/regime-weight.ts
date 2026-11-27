@@ -116,7 +116,14 @@ export function scheduleRegimeWeights(input:SchedulerInput,options:SchedulerOpti
       !Number.isInteger(cooldown)||cooldown<0||!Number.isInteger(t4Days)||t4Days<1||
       !(step>0)||!(off>=0&&shadow>off))throw new Error("Invalid scheduler arguments");
     if(Math.abs(input.targetWeights.reduce((a,b)=>a+b,0)-1)>1e-6)throw new Error("Target must sum to one");
-    const previous=input.state.previousWeights.length===n?input.state.previousWeights:eq(n);
+    const probabilityValues=REGIMES.map(r=>input.probabilities[r]);
+    if(probabilityValues.some(v=>!Number.isFinite(v)||v<0)||
+      Math.abs(probabilityValues.reduce((a,b)=>a+b,0)-1)>1e-5||
+      !REGIMES.includes(input.regime))throw new Error("Invalid regime probabilities");
+    const stored=input.state.previousWeights;
+    if(stored.length!==n||stored.some(v=>!Number.isFinite(v)||v<0)||
+      Math.abs(stored.reduce((a,b)=>a+b,0)-1)>1e-5)throw new Error("Invalid previous allocation");
+    const previous=stored;
     if(input.independentSegmentSamples<off){
       const weights=eq(n);return {weights,mode:"OFF",tradeTriggered:false,reviewTriggered:false,
         reason:"独立样本少于 40：关闭",state:{...input.state,previousWeights:weights},fallback:false};
@@ -131,11 +138,13 @@ export function scheduleRegimeWeights(input:SchedulerInput,options:SchedulerOpti
     const eventDue=input.eventTriggered&&(input.state.lastTradeDay===null||
       input.dayIndex-input.state.lastTradeDay>=cooldown);
     const review=t4Due||eventDue;
-    const weights=boundedStep(previous,normalize(input.targetWeights),step);
-    return {weights,mode:"ACTIVE",tradeTriggered:review,reviewTriggered:review,
+    const proposedWeights=boundedStep(previous,normalize(input.targetWeights),step);
+    return {weights:proposedWeights,mode:"ACTIVE",tradeTriggered:eventDue,reviewTriggered:review,
       reason:t4Due?"T4 距上次复核至少 20 日：强制复核":
         eventDue?"事件触发且冷却期结束":"每日刷新目标，不触发交易",
-      state:{lastTradeDay:review?input.dayIndex:input.state.lastTradeDay,
-        lastReviewDay:review?input.dayIndex:input.state.lastReviewDay,previousWeights:weights},fallback:false};
+      state:{lastTradeDay:eventDue?input.dayIndex:input.state.lastTradeDay,
+        lastReviewDay:review?input.dayIndex:input.state.lastReviewDay,
+        // Keep the last executed allocation unchanged until the outer loop trades.
+        previousWeights:eventDue?proposedWeights:previous},fallback:false};
   }catch{return scheduleFallback(input,"调度异常：回退等权");}
 }
