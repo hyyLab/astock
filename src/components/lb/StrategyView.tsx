@@ -173,7 +173,7 @@ export default function StrategyView() {
         <div className="space-y-2">
           {data.promotion.map((p) => (
             <div key={p.level} className="flex items-center gap-2 text-[12px]">
-              <span className="w-12 shrink-0 font-medium">{p.level}</span>
+              <span className="w-20 shrink-0 font-medium">{p.level}</span>
               <RateBar rate={p.rate} />
               <span className="w-28 shrink-0 text-right tabular-nums text-dim">
                 {p.promoted}/{p.total} = <span className={p.rate >= 0.3 ? "text-up font-medium" : ""}>{pct(p.rate)}</span>
