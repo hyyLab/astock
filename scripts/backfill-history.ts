@@ -21,7 +21,7 @@ async function emBars(stock:any){
 async function main(){
  const [stocks,index]=await Promise.all([db.stockBasic.findMany({select:{stockCode:true,stockName:true,industry:true,listingDate:true},orderBy:{stockCode:"asc"}}),fetchIndexKline("sh000001",321)]);
  const indexSeries=await Promise.all(["sz399001","sz399006","sh000688","sh000016","bj899050","sz399106"].map(code=>fetchIndexKline(code,321)));
- const indexMaps=new Map(indexSeries.map(x=>[x.code,new Map(x.bars.map(b=>[b.date,b]))]));
+ const indexMaps=new Map(indexSeries.map(x=>[x.code,new Map(x.bars.map(b=>[b.date,b] as const))] as const));
  const indexBar=(code:string,date:string)=>indexMaps.get(code)?.get(date);
  const indexPrev=(code:string,date:string)=>{const a=indexSeries.find(x=>x.code===code)?.bars||[],i=a.findIndex(b=>b.date===date);return i>0?a[i-1]:undefined;};
  if(!stocks.length)throw Error("StockBasic empty; refusing full-market history run");
@@ -31,7 +31,7 @@ async function main(){
  const rosters=new Map<string,any>();for(const d of ruleDates)rosters.set(d,{zt:new Set<string>(),zb:new Set<string>(),dt:new Set<string>()});
  console.log("[backfill] codes="+stocks.length+" target="+target[0]+".."+target[target.length-1]+" dry="+dry);
  const results=await pmap(stocks,4,async stock=>{try{return {stock,em:await emBars(stock),qq:await fetchDailyKline(stock.stockCode,320),error:null};}catch(e){return {stock,em:[],qq:[],error:String(e)};}});
- const barsByCode=new Map<string,any[]>(), names=new Map(stocks.map(s=>[s.stockCode,s.stockName]));
+ const barsByCode=new Map<string,any[]>(), names=new Map(stocks.map(s=>[s.stockCode,s.stockName] as const));
  let failed=0,priceMismatch=0,corporateInvalid=0,listingSkipped=0;
  for(const x of results){
   if(x.error||!x.em.length||!x.qq.length){failed++;continue;}
@@ -48,7 +48,7 @@ async function main(){
    const status=detectBarStatus(x.stock.stockCode,x.stock.stockName,prev.close,b);if(status)rosters.get(b.date)[status==="limitUp"?"zt":status==="broken"?"zb":"dt"].add(x.stock.stockCode);
   }
  }
- const ztMap=new Map(ruleDates.map(d=>[d,rosters.get(d).zt])),chain=computeBoardChain(ruleDates,ztMap,names),byCode=new Map(stocks.map(s=>[s.stockCode,s]));
+ const ztMap=new Map(ruleDates.map(d=>[d,rosters.get(d).zt] as const)),chain=computeBoardChain(ruleDates,ztMap,names),byCode=new Map(stocks.map(s=>[s.stockCode,s] as const));
  const ds:any[]=[],lu:any[]=[],zb:any[]=[],dt:any[]=[],bh:any[]=[],sd:any[]=[],dm:any[]=[],dc:any[]=[],reg:any[]=[];
  for(const d of target){
   const r=rosters.get(d),states=chain.byDate.get(d);
