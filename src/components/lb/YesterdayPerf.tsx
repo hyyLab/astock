@@ -29,7 +29,7 @@ function Distribution({ bundle }: { bundle: ReviewBundle }) {
         {counts.map((n, i) => (
           <div key={i} className="flex h-full flex-1 flex-col justify-end" title={`${BUCKETS[i].label}%：${n} 家`}>
             <div
-              className={`rounded-t-[2px] transition-[height] duration-300 ${BUCKETS[i].positive ? "bg-up/85" : "bg-down/85"}`}
+              className={`rounded-t-[2px] transition-[height] duration-300 ${BUCKETS[i].positive ? "bg-[#8B98A7]" : "bg-[#46525E]"}`}
               style={{ height: `${Math.max(n === 0 ? 0 : 6, (n / maxCount) * 100)}%` }}
             />
           </div>
