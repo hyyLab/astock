@@ -4,14 +4,20 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/lb/ThemeProvider";
 
-const inter = Inter({
-  variable: "--font-inter",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-ibm-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
