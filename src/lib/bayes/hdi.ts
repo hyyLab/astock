@@ -59,3 +59,6 @@ export function runHdiSelfChecks():void {
   if(Math.abs(lower-0.05)>1e-6||Math.abs(upper-0.95)>1e-6)
     throw new Error("Uniform Beta(1,1) 90% HDI self-check failed");
 }
+
+// Fail fast if the numerical inversion regresses on the uniform reference case.
+runHdiSelfChecks();
