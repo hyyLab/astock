@@ -1,7 +1,7 @@
 # Bayes 战法权重系统：独立逻辑测试清单
 
 > 测试对象：`hyyLab/astock` 仓库 `feat/postgres-shadow-tables` 分支。
-> 基线提交：`7e719d720b45e51801bc932b69600db7e7cb6f19`。
+> 基线提交：`1160e2b5c0d3a899b1bbf48f59f4a5e005b39a0b`。
 > 本清单供没有仓库运行环境的独立测试者使用：所有用例均可通过代码走查、公式代入和手算核对。数值允许误差见各用例。
 >
 > **重要：** 本清单是测试规格，不代表这些测试已经执行或通过。执行者应先确认当前分支包含基线提交及本清单提交。
@@ -26,7 +26,7 @@
 - **输入：** `betaHdi(1, 1, 0.9)`
 - **期望：** `[0.05, 0.95]`，两个端点误差均不超过 `1e-6`。
 - **核对：** 均匀密度下，任意长度 0.9 的区间概率均为 0.9；实现对称化后必须精确返回这两个端点。
-- **代码位置：** `hdi.ts / betaHdi`；`hdi.ts / runHdiSelfChecks`；模块末尾的自检调用。
+- **代码位置：** `hdi.ts / betaHdi`、`hdi.ts / runHdiSelfChecks`；`hdi.ts` 模块末尾的自检调用，以及 `assemble.ts:5-6` 的装配模块加载调用。直接导入 `hdi.ts` 也会触发自检。
 
 ### HDI-02：偏斜 Beta(2,5) 的 90% HDI
 
@@ -254,16 +254,18 @@
   - `regimes=["WARMING"]`。
   - `vpNonPositive=false`。
   - `priorFallbackRegimes=[]`。
+  - `warnings=[]`。
   - `strategies` 按输入顺序 A、B、C。
   - `fdr.q=0.1`、`fdr.globalBaseline=0.5`、`fdr.fallback=false`、`fdr.reason=null`。
   - `fdr.selectedIds=["C"]`、`fdr.cutoffIndex=1`、`fdr.averageVAtCutoff=0.0020383695`（误差≤1e-6）。
+  - `warnings=[]`，表示本基准输入没有先验回退或无效桶警告。
 - **期望 strategies 完整字段：**
 
-| id | name | regime | rawWinRate | postMean | hdiLower | hdiUpper | lambda | n | selected | noSignificantMarketDifference |
-|---|---|---|---:|---:|---:|---:|---:|---:|---|---|
-| A | 低胜率战法 | WARMING | 0.2 | 0.3012924071 | 0.1130408048 | 0.4829790610 | 0.3376413570 | 10 | false | true |
-| B | 中胜率战法 | WARMING | 0.5 | 0.5000000000 | 0.2944464851 | 0.7055535149 | 0.3376413570 | 10 | false | true |
-| C | 高胜率战法 | WARMING | 0.8 | 0.6987075929 | 0.5170209388 | 0.8869591949 | 0.3376413570 | 10 | true | false |
+| id | name | regime | rawWinRate | postMean | hdiLower | hdiUpper | lambda | n | posteriorAlpha | posteriorBeta | selected | noSignificantMarketDifference |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
+| A | 低胜率战法 | WARMING | 0.2 | 0.3012924071 | 0.1130408048 | 0.4829790610 | 0.3376413570 | 10 | 4.5487804878 | 10.5487804878 | false | true |
+| B | 中胜率战法 | WARMING | 0.5 | 0.5000000000 | 0.2944464851 | 0.7055535149 | 0.3376413570 | 10 | 7.5487804878 | 7.5487804878 | false | true |
+| C | 高胜率战法 | WARMING | 0.8 | 0.6987075929 | 0.5170209388 | 0.8869591949 | 0.3376413570 | 10 | 10.5487804878 | 4.5487804878 | true | false |
 
 - **期望 fdr.results（注意排序是 v 从小到大，不是输入顺序）：**
 
@@ -278,6 +280,7 @@
   - FDR 使用自己的默认 Beta(1,1) 先验，因此 FDR 后验参数分别为 A=`Beta(3,9)`、B=`Beta(6,6)`、C=`Beta(9,3)`；不要把经验先验参数错误复用到 FDR。
   - 同 regime leave-one-out 基准：A 的 p0=(5+8)/20=0.65；B 的 p0=(2+8)/20=0.5；C 的 p0=(2+5)/20=0.35。
   - `v=P(theta<=p0|data)`，C 的 v 最小并通过 q=0.1 的首个累计均值门槛；加上 B 后平均 v=(0.0020383695+0.5)/2>0.1，因此只选 C。
+  - `noSignificantMarketDifference` 仅在 `!fdr.fallback && !item.selected && item.n>=minN` 时为 true；FDR fallback 表示证据未知，不能据此认定不存在显著市场差异。
 - **代码位置：** `assemble.ts / assembleBayesStrategyViewData`；先验部分 `empirical-prior.ts / estimateEmpiricalPrior`；HDI `hdi.ts / betaHdi`；FDR `fdr.ts / selectBayesianFdr`。
 
 ### ASM-02：小样本战法仍展示，但不参与 FDR
