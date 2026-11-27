@@ -70,7 +70,7 @@ export default function SentimentCycle({ bundle }: { bundle: ReviewBundle }) {
         <span className="ml-auto flex items-baseline gap-2 text-[11px]">
           {prevT != null && <span className="num text-dim2">昨日 {prevT.toFixed(0)}°</span>}
           {deltaT != null && (
-            <span className={`num font-medium tabular-nums ${deltaT > 0 ? "text-up" : deltaT < 0 ? "text-down" : "text-dim"}`}>
+            <span className={`num font-medium tabular-nums ${"text-fg2"}`}>
               {deltaT > 0 ? "+" : ""}
               {deltaT.toFixed(1)}°
             </span>
