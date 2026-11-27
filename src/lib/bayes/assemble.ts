@@ -7,7 +7,7 @@ export interface BayesStrategyItem {
   id:string; name:string; regime:string; rawWinRate:number; postMean:number;
   hdiLower:number; hdiUpper:number; lambda:number; n:number;
   posteriorAlpha:number; posteriorBeta:number;
-  selected:boolean; noSignificantMarketDifference:boolean;
+  rawCountScreen:boolean|null;
 }
 export interface AssembleBayesOptions {
   names?:Record<string,string>;
@@ -18,7 +18,7 @@ export interface AssembleBayesOptions {
 export interface BayesAssemblyResult {
   strategies:BayesStrategyItem[];
   regimes:string[];
-  vpNonPositive:boolean;
+  vpNonPositiveRegimes:string[];
   fdr:BayesianFdrResult;
   priorFallbackRegimes:string[];
   warnings:string[];
@@ -38,16 +38,17 @@ export function assembleBayesStrategyViewData(
   const ids=new Set<string>(),items:BayesStrategyItem[]=[],fdrInput:
     Array<{id:string;regime:string;wins:number;n:number}>=[];
   const priorFallbackRegimes:string[]=[];
+  const vpNonPositiveRegimes:string[]=[];
   const warnings:string[]=[];
-  let vpNonPositive=false;
   for(const group of groups){
     if(!group.regime||!Array.isArray(group.buckets))throw new Error("Invalid regime group");
     const prior=estimateEmpiricalPrior(group.buckets);
+    if(prior.selfCheckWarning)warnings.push(`Regime ${group.regime} 经验先验自检警告：${prior.selfCheckWarning}`);
     if(prior.fallback){
       priorFallbackRegimes.push(group.regime);
       warnings.push(`Regime ${group.regime} 经验先验回退：${prior.reason??"未知原因"}`);
     }else if(prior.vp<=0||prior.completeShrinkage){
-      vpNonPositive=true;
+      vpNonPositiveRegimes.push(group.regime);
     }
     const posteriorById=new Map(prior.buckets.map(x=>[x.id,x]));
     for(const bucket of group.buckets){
@@ -67,7 +68,7 @@ export function assembleBayesStrategyViewData(
         id:bucket.id,name:options.names?.[bucket.id]??bucket.id,regime:group.regime,
         rawWinRate:bucket.n?bucket.wins/bucket.n:fitted.observedRate,postMean:fitted.postMean,
         hdiLower,hdiUpper,lambda:fitted.lambda,n:bucket.n,posteriorAlpha:alpha,posteriorBeta:beta,
-        selected:false,noSignificantMarketDifference:false
+        rawCountScreen:null
       });
       // The minimum-N gate is deliberately applied before invoking FDR.
       if(bucket.n>=minN)fdrInput.push({id:bucket.id,regime:group.regime,wins:bucket.wins,n:bucket.n});
@@ -75,13 +76,13 @@ export function assembleBayesStrategyViewData(
   }
   const fdr=selectBayesianFdr(fdrInput,{...options.fdr,minN});
   const selected=new Set(fdr.fallback?[]:fdr.selectedIds);
+  const fdrEligibleIds=new Set(fdr.results.map(x=>x.id));
   for(const item of items){
-    item.selected=selected.has(item.id);
-    // A failed FDR computation is unknown evidence, not evidence of no difference.
-    item.noSignificantMarketDifference=!fdr.fallback&&!item.selected&&item.n>=minN;
+    // Raw-count FDR is an exploratory screen, separate from the empirical posterior.
+    item.rawCountScreen=fdr.fallback||!fdrEligibleIds.has(item.id)?null:selected.has(item.id);
   }
   return {strategies:items,regimes:[...new Set(groups.map(x=>x.regime))],
-    vpNonPositive,fdr,priorFallbackRegimes,warnings};
+    vpNonPositiveRegimes,fdr,priorFallbackRegimes,warnings};
 }
 
 /** Convenience API when only the BayesStrategyItem[] is needed. */
