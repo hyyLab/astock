@@ -53,9 +53,17 @@ export function betaHdi(alpha:number,beta:number,credMass=0.9):[number,number] {
   return [lower,upper];
 }
 
-/** Lightweight runtime self-check; throws if the uniform reference drifts. */
+/** Runtime numerical checks for both the symmetric shortcut and the general HDI path. */
 export function runHdiSelfChecks():void {
-  const [lower,upper]=betaHdi(1,1,0.9);
-  if(Math.abs(lower-0.05)>1e-6||Math.abs(upper-0.95)>1e-6)
+  const [uniformLower,uniformUpper]=betaHdi(1,1,0.9);
+  if(Math.abs(uniformLower-0.05)>1e-6||Math.abs(uniformUpper-0.95)>1e-6)
     throw new Error("Uniform Beta(1,1) 90% HDI self-check failed");
+
+  // Non-symmetric reference exercises regularizedBeta CDF inversion and interval search.
+  const [skewLower,skewUpper]=betaHdi(2,5,0.9);
+  if(Math.abs(skewLower-0.0301508644)>1e-6||Math.abs(skewUpper-0.5252886427)>1e-6)
+    throw new Error("Beta(2,5) 90% HDI self-check failed");
 }
+
+// Keep standalone hdi.ts importers fail-fast; assemble.ts also checks at its own load boundary.
+runHdiSelfChecks();
