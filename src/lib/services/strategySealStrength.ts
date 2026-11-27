@@ -275,8 +275,7 @@ export async function getSealStrengthBacktest(): Promise<SealStrengthBacktest> {
     ),
   );
 
-  return {
-    asOf: dates[dates.length - 1] ?? "",
+
     dayCount: dates.length,
     signalCount,
     validSampleCount: buckets.reduce((sum, bucket) => sum + bucket.n, 0),
