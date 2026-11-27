@@ -7,7 +7,7 @@ import { ASTOCK_THEME_IDS } from "./theme-config";
 export function ThemeProvider({ children }: { children: ReactNode }) {
   return (
     <NextThemesProvider
-      attribute="class"
+      attribute="data-theme"
       themes={[...ASTOCK_THEME_IDS]}
       defaultTheme="dark"
       enableSystem={false}
