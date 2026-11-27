@@ -65,10 +65,10 @@ function sectorsOf(row: { themes: string | null; industry: string | null }): str
 export interface GroupMetrics {
   /** 分析单元数 = (tradeDate, sector) 事件数（非个股数） */
   n: number;
-  /** 次日高开率：事件内二元结果的比例（首封）或事件内跟风平均高开率再对事件取均值的说明见实现 */
+  /** 次日高开率（事件级二元结果的比例） */
   highOpenRate: number | null;
   highOpenWilson: { low: number; high: number } | null;
-  /** 用于 Wilson 的成功次数（仅二元汇总时有意义） */
+  /** 用于 Wilson 的成功次数 */
   highOpenSuccesses: number;
   /** 次日收盘溢价 %：相对前收（优先 DailyStock.changePct） */
   avgClosePremiumPct: number | null;
@@ -97,14 +97,34 @@ interface EventLeg {
   maxDrawdownPct: number;
 }
 
+interface LimitUpLite {
+  tradeDate: string;
+  stockCode: string;
+  firstLimitTime: string | null;
+  themes: string | null;
+  industry: string | null;
+}
+
+interface DailyStockLite {
+  tradeDate: string;
+  stockCode: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  prevClose: number | null;
+  changePct: number;
+}
+
+type LuRow = LimitUpLite & { t: string };
+
 function mean(xs: number[]): number | null {
   if (xs.length === 0) return null;
   return xs.reduce((a, b) => a + b, 0) / xs.length;
 }
 
-function buildGroupMetrics(fromBinaryHighOpen: boolean, legs: EventLeg[]): GroupMetrics {
+function buildGroupMetrics(legs: EventLeg[]): GroupMetrics {
   const n = legs.length;
-  const conclusionReady = n >= 20;
   if (n === 0) {
     return {
       n: 0,
@@ -117,26 +137,44 @@ function buildGroupMetrics(fromBinaryHighOpen: boolean, legs: EventLeg[]): Group
     };
   }
 
-  // 高开率：每个 (日,题材) 已是一条腿——首封为 0/1；跟风腿为该题材日跟风高开比例再二值化不合适，
-  // 跟风用「事件级高开率」= 跟风股高开比例的均值，Wilson 则把事件内「高开跟风数/跟风数」池化会破坏设计。
-  // 这里统一：对事件级 highOpen 二元（跟风：事件内跟风平均高开率 >= 0.5 记为 1）做 Wilson，
-  // 同时 highOpenRate 报告事件级高开率的均值（跟风更平滑）。
-  const eventHighOpenRates = legs.map((l) => (l.highOpen ? 1 : 0));
-  const successes = eventHighOpenRates.reduce((a, b) => a + b, 0);
-  const highOpenRate = mean(eventHighOpenRates);
-  const highOpenWilson = wilsonInterval(successes, n);
+  // 事件级 highOpen 二元（跟风：事件内跟风平均高开率 >= 0.5 记为 1）+ Wilson
+  let successes = 0;
+  const closePremiums: number[] = [];
+  const drawdowns: number[] = [];
+  for (const l of legs) {
+    if (l.highOpen) successes += 1;
+    closePremiums.push(l.closePremiumPct);
+    drawdowns.push(l.maxDrawdownPct);
+  }
 
-  return {
+  const result: GroupMetrics = {
     n,
-    highOpenRate,
-    highOpenWilson,
+    highOpenRate: successes / n,
+    highOpenWilson: wilsonInterval(successes, n),
     highOpenSuccesses: successes,
-    avgClosePremiumPct: mean(legs.map((l) => l.closePremiumPct)),
-    avgMaxDrawdownPct: mean(legs.map((l) => l.maxDrawdownPct)),
-    conclusionReady,
-    // fromBinaryHighOpen reserved for future asymmetry; currently both paths use event-level binary
-    ...(fromBinaryHighOpen ? {} : {}),
+    avgClosePremiumPct: mean(closePremiums),
+    avgMaxDrawdownPct: mean(drawdowns),
+    conclusionReady: n >= 20,
   };
+  return result;
+}
+
+function legFromDs(ds: DailyStockLite): EventLeg | null {
+  const prev =
+    ds.prevClose != null && ds.prevClose > 0
+      ? ds.prevClose
+      : ds.open > 0
+        ? ds.open / (1 + (ds.changePct ?? 0) / 100)
+        : null;
+  if (prev == null || prev <= 0 || ds.open == null || ds.open <= 0) return null;
+  const highOpen = ds.open > prev;
+  const closePremiumPct =
+    ds.changePct != null && Number.isFinite(ds.changePct)
+      ? ds.changePct
+      : ((ds.close - prev) / prev) * 100;
+  const maxDrawdownPct = ((ds.low - ds.open) / ds.open) * 100;
+  if (!Number.isFinite(closePremiumPct) || !Number.isFinite(maxDrawdownPct)) return null;
+  return { highOpen, closePremiumPct, maxDrawdownPct };
 }
 
 /**
@@ -147,7 +185,7 @@ function buildGroupMetrics(fromBinaryHighOpen: boolean, legs: EventLeg[]): Group
  * 4) 次日指标来自 DailyStock（open/high/low/close/prevClose/changePct）
  */
 export async function getSectorFirstSealBundle(): Promise<SectorFirstSealBundle> {
-  const [limitUps, dailyStocks] = await Promise.all([
+  const [limitUps, dailyStocks]: [LimitUpLite[], DailyStockLite[]] = await Promise.all([
     prisma.limitUp.findMany({
       orderBy: [{ tradeDate: "asc" }, { stockCode: "asc" }],
       select: {
@@ -178,16 +216,12 @@ export async function getSectorFirstSealBundle(): Promise<SectorFirstSealBundle>
     nextDate.set(dates[i], dates[i + 1]);
   }
 
-  // DailyStock index: tradeDate|stockCode
   const dsKey = (d: string, c: string) => `${d}|${c}`;
-  const dsMap = new Map<string, (typeof dailyStocks)[number]>();
+  const dsMap = new Map<string, DailyStockLite>();
   for (const r of dailyStocks) {
     dsMap.set(dsKey(r.tradeDate, r.stockCode), r);
   }
 
-  // Group limit-ups by date then sector
-  // date -> sector -> rows with normalized time
-  type LuRow = (typeof limitUps)[number] & { t: string };
   const byDateSector = new Map<string, Map<string, LuRow[]>>();
 
   for (const row of limitUps) {
@@ -199,38 +233,26 @@ export async function getSectorFirstSealBundle(): Promise<SectorFirstSealBundle>
     const secMap = byDateSector.get(row.tradeDate)!;
     for (const sec of sectors) {
       if (!secMap.has(sec)) secMap.set(sec, []);
-      secMap.get(sec)!.push({ ...row, t });
+      const luRow: LuRow = {
+        tradeDate: row.tradeDate,
+        stockCode: row.stockCode,
+        firstLimitTime: row.firstLimitTime,
+        themes: row.themes,
+        industry: row.industry,
+        t,
+      };
+      secMap.get(sec)!.push(luRow);
     }
   }
 
   const firstLegs: EventLeg[] = [];
   const followLegs: EventLeg[] = [];
 
-  const legFromDs = (ds: (typeof dailyStocks)[number]): EventLeg | null => {
-    const prev =
-      ds.prevClose != null && ds.prevClose > 0
-        ? ds.prevClose
-        : ds.open > 0
-          ? ds.open / (1 + (ds.changePct ?? 0) / 100)
-          : null;
-    if (prev == null || prev <= 0 || ds.open == null || ds.open <= 0) return null;
-    const highOpen = ds.open > prev;
-    const closePremiumPct =
-      ds.changePct != null && Number.isFinite(ds.changePct)
-        ? ds.changePct
-        : ((ds.close - prev) / prev) * 100;
-    // 盘中最大回撤：相对开盘
-    const maxDrawdownPct = ((ds.low - ds.open) / ds.open) * 100;
-    if (!Number.isFinite(closePremiumPct) || !Number.isFinite(maxDrawdownPct)) return null;
-    return { highOpen, closePremiumPct, maxDrawdownPct };
-  };
-
   for (const [date, secMap] of byDateSector) {
     const nd = nextDate.get(date);
     if (!nd) continue;
 
     for (const [, rows] of secMap) {
-      // 同一股可能因数据重复出现：按 stockCode 去重，保留最早时间
       const byCode = new Map<string, LuRow>();
       for (const r of rows) {
         const prev = byCode.get(r.stockCode);
@@ -239,10 +261,10 @@ export async function getSectorFirstSealBundle(): Promise<SectorFirstSealBundle>
       const uniq = [...byCode.values()].sort((a, b) =>
         a.t < b.t ? -1 : a.t > b.t ? 1 : a.stockCode.localeCompare(b.stockCode)
       );
-      if (uniq.length < 2) continue; // 需要首封 + 至少 1 跟风
+      if (uniq.length < 2) continue;
 
       const first = uniq[0];
-      const followers = uniq.slice(1);
+      const followerRows = uniq.slice(1);
 
       const firstDs = dsMap.get(dsKey(nd, first.stockCode));
       if (!firstDs) continue;
@@ -250,7 +272,7 @@ export async function getSectorFirstSealBundle(): Promise<SectorFirstSealBundle>
       if (!firstLeg) continue;
 
       const fLegs: EventLeg[] = [];
-      for (const f of followers) {
+      for (const f of followerRows) {
         const ds = dsMap.get(dsKey(nd, f.stockCode));
         if (!ds) continue;
         const leg = legFromDs(ds);
@@ -258,12 +280,15 @@ export async function getSectorFirstSealBundle(): Promise<SectorFirstSealBundle>
       }
       if (fLegs.length === 0) continue;
 
-      // 跟风：事件内先平均，再作为一条事件腿（高开=平均高开率>=0.5）
       const followHighOpenRate = fLegs.filter((l) => l.highOpen).length / fLegs.length;
+      const avgClose = mean(fLegs.map((l) => l.closePremiumPct));
+      const avgDd = mean(fLegs.map((l) => l.maxDrawdownPct));
+      if (avgClose == null || avgDd == null) continue;
+
       const followLeg: EventLeg = {
         highOpen: followHighOpenRate >= 0.5,
-        closePremiumPct: mean(fLegs.map((l) => l.closePremiumPct))!,
-        maxDrawdownPct: mean(fLegs.map((l) => l.maxDrawdownPct))!,
+        closePremiumPct: avgClose,
+        maxDrawdownPct: avgDd,
       };
 
       firstLegs.push(firstLeg);
@@ -271,8 +296,8 @@ export async function getSectorFirstSealBundle(): Promise<SectorFirstSealBundle>
     }
   }
 
-  const firstSeal = buildGroupMetrics(true, firstLegs);
-  const followers = buildGroupMetrics(false, followLegs);
+  const firstSeal = buildGroupMetrics(firstLegs);
+  const followers = buildGroupMetrics(followLegs);
 
   const closePremiumSpreadPct =
     firstSeal.avgClosePremiumPct != null && followers.avgClosePremiumPct != null
