@@ -132,7 +132,7 @@ export default function TradeCalendar({
             const isSelected = c.date === selected;
             if (isSelected) {
               return (
-                <span key={c.date} className="mx-auto flex h-7 w-7 items-center justify-center rounded-[3px] bg-up font-semibold text-white" title={c.date}>
+                <span key={c.date} className="mx-auto flex h-7 w-7 items-center justify-center rounded-[3px] bg-primary font-semibold text-primary-foreground" title={c.date}>
                   {c.day}
                 </span>
               );
@@ -145,8 +145,8 @@ export default function TradeCalendar({
                   className={`mx-auto flex h-7 w-7 items-center justify-center rounded-[3px] transition-colors hover:bg-muted text-foreground ${
                     isTodayCell
                       ? inData
-                        ? "font-semibold text-up"
-                        : "border border-up/60 font-semibold text-up"
+                        ? "font-semibold text-primary"
+                        : "border border-primary/60 font-semibold text-primary"
                       : ""
                   }`}
                   title={isTodayCell && !inData ? `${c.date} 今日 · 盘中实时` : `${c.date} 复盘`}
@@ -158,7 +158,7 @@ export default function TradeCalendar({
             return (
               <span key={c.date} className="relative mx-auto flex h-7 w-7 cursor-default items-center justify-center rounded-[3px] text-dim2">
                 {c.day}
-                {isTodayCell && !todaySelectable && <span className="absolute bottom-0.5 h-0.5 w-0.5 rounded-full bg-up" />}
+                {isTodayCell && !todaySelectable && <span className="absolute bottom-0.5 h-0.5 w-0.5 rounded-full bg-primary" />}
               </span>
             );
           })}
