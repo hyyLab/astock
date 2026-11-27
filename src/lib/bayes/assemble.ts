@@ -1,9 +1,6 @@
 import { estimateEmpiricalPrior, type WinRateBucket } from "./empirical-prior";
-import { betaHdi, runHdiSelfChecks } from "./hdi";
+import { betaHdi } from "./hdi";
 import { selectBayesianFdr, type BayesianFdrOptions, type BayesianFdrResult } from "./fdr";
-
-// Fail-fast: verify the HDI numerics once at module load (moved here from hdi.ts's old import-time call).
-runHdiSelfChecks();
 
 export interface RegimeWinRateGroup { regime:string; buckets:WinRateBucket[] }
 export interface BayesStrategyItem {

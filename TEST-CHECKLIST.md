@@ -1,7 +1,7 @@
 # Bayes 战法权重系统：独立逻辑测试清单
 
 > 测试对象：`hyyLab/astock` 仓库 `feat/postgres-shadow-tables` 分支。
-> 基线提交：`1160e2b5c0d3a899b1bbf48f59f4a5e005b39a0b`。
+> 基线提交：`463920ec404cc9371db6937b569ea0adc319e8b1`。
 > 本清单供没有仓库运行环境的独立测试者使用：所有用例均可通过代码走查、公式代入和手算核对。数值允许误差见各用例。
 >
 > **重要：** 本清单是测试规格，不代表这些测试已经执行或通过。执行者应先确认当前分支包含基线提交及本清单提交。
@@ -26,7 +26,7 @@
 - **输入：** `betaHdi(1, 1, 0.9)`
 - **期望：** `[0.05, 0.95]`，两个端点误差均不超过 `1e-6`。
 - **核对：** 均匀密度下，任意长度 0.9 的区间概率均为 0.9；实现对称化后必须精确返回这两个端点。
-- **代码位置：** `hdi.ts / betaHdi`、`hdi.ts / runHdiSelfChecks`；`hdi.ts` 模块末尾的自检调用，以及 `assemble.ts:5-6` 的装配模块加载调用。直接导入 `hdi.ts` 也会触发自检。
+- **代码位置：** `hdi.ts / betaHdi`、`hdi.ts / runHdiSelfChecks`；`hdi.ts` 模块末尾的自检调用。直接导入 `hdi.ts` 会触发自检；导入 `assemble.ts` 等经由 `hdi.ts` 的模块同样会触发（装配层不再重复调用）。
 
 ### HDI-02：偏斜 Beta(2,5) 的 90% HDI
 
@@ -50,6 +50,17 @@
 - **输入：** 固定 `alpha=2,beta=5`，分别求 `inverseBetaCdf(0.1,2,5)`、`inverseBetaCdf(0.5,2,5)`、`inverseBetaCdf(0.9,2,5)`。
 - **期望：** 三个结果严格递增，均在 `(0,1)`；代回 `regularizedBeta(x,2,5)` 后分别得到 0.1、0.5、0.9，误差不超过 `1e-6`。
 - **代码位置：** `hdi.ts / inverseBetaCdf`；`fdr.ts / regularizedBeta`。
+
+### HDI-05：regularizedBeta 故障注入——导入 hdi.ts 必须抛错
+
+- **测试方法（故障注入走查）：**
+  1. 临时把 `fdr.ts / regularizedBeta` 替换为注入实现，两种注入分别独立测试：
+     - 常数注入：函数体直接 `return 0.5;`（忽略入参）；
+     - NaN 注入：函数体直接 `return NaN;`。
+  2. 注入生效期间，运行一个只做 `import "./src/lib/bayes/hdi";` 的入口脚本（等价于以任意方式加载 `hdi.ts` 模块）。
+  3. 每种注入记录模块加载结果，然后恢复原代码。
+- **期望：** 两种注入下 `hdi.ts` 模块加载都必须抛错（Uniform Beta(1,1) 或 Beta(2,5) 自检失败之一），不允许静默加载成功。若自检断言缺少 `Number.isFinite` 防护，端点为 NaN 时 `Math.abs(NaN-参考值)>1e-6` 恒为 false，自检会静默通过。
+- **代码位置：** `hdi.ts / runHdiSelfChecks` 的 `!Number.isFinite(...)` 防护与参考常数断言；被注入的 `fdr.ts / regularizedBeta`；`hdi.ts` 模块末尾的自检调用。
 
 ---
 
@@ -338,6 +349,7 @@
 测试者完成后逐项标记：
 
 - [ ] HDI-01 至 HDI-04：数值、边界和 CDF 反演。
+- [ ] HDI-05：注入常数/NaN regularizedBeta 后，导入 hdi.ts 必须抛错。
 - [ ] EP-01：默认 postMean 边界口径。
 - [ ] EP-02：经验先验手算基准。
 - [ ] EP-03：注入自检失败后保留结果并写 warning。

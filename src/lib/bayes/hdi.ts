@@ -56,14 +56,22 @@ export function betaHdi(alpha:number,beta:number,credMass=0.9):[number,number] {
 /** Runtime numerical checks for both the symmetric shortcut and the general HDI path. */
 export function runHdiSelfChecks():void {
   const [uniformLower,uniformUpper]=betaHdi(1,1,0.9);
-  if(Math.abs(uniformLower-0.05)>1e-6||Math.abs(uniformUpper-0.95)>1e-6)
+  if(!Number.isFinite(uniformLower)||!Number.isFinite(uniformUpper)||
+    Math.abs(uniformLower-0.05)>1e-6||Math.abs(uniformUpper-0.95)>1e-6)
     throw new Error("Uniform Beta(1,1) 90% HDI self-check failed");
 
   // Non-symmetric reference exercises regularizedBeta CDF inversion and interval search.
+  // The Beta(2,5) reference constants below are tied to the current optimizer
+  // configuration (grid size, golden-section iteration count, and the
+  // inverseBetaCdf bisection tolerance). Changing ANY of these parameters shifts
+  // the converged endpoints, so the constants MUST be re-derived afterwards;
+  // otherwise this self-check fails spuriously.
   const [skewLower,skewUpper]=betaHdi(2,5,0.9);
-  if(Math.abs(skewLower-0.0301508644)>1e-6||Math.abs(skewUpper-0.5252886427)>1e-6)
+  if(!Number.isFinite(skewLower)||!Number.isFinite(skewUpper)||
+    Math.abs(skewLower-0.0301508644)>1e-6||Math.abs(skewUpper-0.5252886427)>1e-6)
     throw new Error("Beta(2,5) 90% HDI self-check failed");
 }
 
-// Keep standalone hdi.ts importers fail-fast; assemble.ts also checks at its own load boundary.
+// Keep importers fail-fast: any module importing hdi.ts (e.g. assemble.ts)
+// triggers this check transitively at its own module load.
 runHdiSelfChecks();
