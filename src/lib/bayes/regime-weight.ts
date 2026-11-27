@@ -155,7 +155,9 @@ export function scheduleRegimeWeights(input:SchedulerInput,options:SchedulerOpti
     const eventDue=input.eventTriggered&&(input.state.lastTradeDay===null||
       input.dayIndex-input.state.lastTradeDay>=cooldown);
     const review=t4Due||eventDue;
-    // The 0.03 cap is applied once per executed rebalance event. Calendar days\n    // without an event never accumulate step capacity: slow, event-driven moves\n    // avoid reacting to noisy daily target fluctuations.\n    const proposedWeights=boundedStep(previous,normalize(target),step);
+    // Step capacity is consumed only by an executed rebalance event, never by
+    // elapsed calendar days or a daily target refresh.
+    const proposedWeights=eventDue?boundedStep(previous,normalize(target),step):previous;
     return {weights:proposedWeights,mode:"ACTIVE",tradeTriggered:eventDue,reviewTriggered:review,
       reason:t4Due?"T4 距上次复核至少 20 日：强制复核":
         eventDue?"事件触发且冷却期结束":"每日刷新目标，不触发交易",
