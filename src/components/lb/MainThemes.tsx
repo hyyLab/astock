@@ -54,7 +54,7 @@ export function ConceptHeatmap({
               {r.series.map((p) => {
                 const alpha = p.count === 0 ? 0 : 0.12 + (p.count / maxCount) * 0.78;
                 const bg = p.count === 0 ? "#f7f8fa" : `rgba(217,53,47,${alpha.toFixed(2)})`;
-                const txtCls = p.count === 0 ? "text-dim2" : alpha > 0.5 ? "text-white" : "text-up";
+                const txtCls = p.count === 0 ? "text-dim2" : alpha > 0.5 ? "text-white" : "text-fg2";
                 return (
                   <td key={p.date} className="p-0.5">
                     <div
