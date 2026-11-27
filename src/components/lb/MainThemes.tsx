@@ -77,8 +77,8 @@ export function ConceptHeatmap({
 
 /** 影响标签（与主线追踪一致的三色口径） */
 const IMPACT_META: Record<ThemeNewsHeadline["impact"], { text: string; cls: string }> = {
-  good: { text: "利好", cls: "bg-up-soft text-up" },
-  bad: { text: "利空", cls: "bg-down-soft text-down" },
+  good: { text: "利好", cls: "bg-muted text-fg2" },
+  bad: { text: "利空", cls: "bg-muted text-fg2" },
   none: { text: "中性", cls: "bg-muted text-dim" },
 };
 
@@ -159,7 +159,7 @@ export default function MainThemes({ bundle }: { bundle: ReviewBundle }) {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <button
-                      className="truncate text-[13px] font-medium text-foreground hover:text-up"
+                      className="truncate text-[13px] font-medium text-foreground hover:text-primary"
                       title={`查看 ${c.conceptName} 涨停股`}
                       onClick={() => (location.hash = `#/limit-up?concept=${encodeURIComponent(c.conceptName)}`)}
                     >
@@ -216,13 +216,13 @@ export default function MainThemes({ bundle }: { bundle: ReviewBundle }) {
                 >
                   <span
                     className={`shrink-0 rounded-[2px] px-1 text-[10px] font-medium leading-4 ${
-                      (c.newsGoodCount ?? 0) > 0 ? "bg-up-soft text-up" : "bg-muted text-dim"
+                      (c.newsGoodCount ?? 0) > 0 ? "bg-muted text-fg2" : "bg-muted text-dim"
                     }`}
                   >
                     新闻 {newsN}
                   </span>
                   {(c.newsGoodCount ?? 0) > 0 && (
-                    <span className="num shrink-0 text-[10px] text-up">利好 {c.newsGoodCount}</span>
+                    <span className="num shrink-0 text-[10px] text-fg2">利好 {c.newsGoodCount}</span>
                   )}
                   <span className="truncate text-dim2" title={(c.news ?? []).map((n) => n.title).join(" / ")}>
                     {c.news?.[0]?.title ?? ""}
