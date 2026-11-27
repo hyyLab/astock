@@ -93,7 +93,7 @@ export default function VolumeHoldView() {
       <section className="panel">
         <div className="module-header">
           <h2 className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
-            <TrendingUp className="h-4 w-4 text-up" /> 爆量不跌
+            <TrendingUp className="h-4 w-4 text-primary" /> 爆量不跌
           </h2>
           {data && (
             <span className="num text-[11px] text-dim">
@@ -119,7 +119,7 @@ export default function VolumeHoldView() {
               key={t.key}
               onClick={() => setTab(t.key)}
               className={`rounded-[3px] px-2 py-1 text-[12px] transition-colors ${
-                tab === t.key ? "bg-up-soft font-medium text-up" : "text-muted-foreground hover:bg-muted"
+                tab === t.key ? "bg-sidebar-accent font-medium text-primary" : "text-muted-foreground hover:bg-muted"
               }`}
             >
               {t.label}
@@ -144,28 +144,28 @@ export default function VolumeHoldView() {
                   <th className="px-3.5 py-1.5 text-left font-normal">股票</th>
                   <th
                     onClick={() => setSortKey("current")}
-                    className={`cursor-pointer px-2 py-1.5 text-right font-normal hover:text-foreground ${sortKey === "current" ? "text-up" : ""}`}
+                    className={`cursor-pointer px-2 py-1.5 text-right font-normal hover:text-foreground ${sortKey === "current" ? "text-primary" : ""}`}
                     title="点击排序"
                   >
                     现价 / 今日
                   </th>
                   <th
                     onClick={() => setSortKey("since")}
-                    className={`cursor-pointer px-2 py-1.5 text-right font-normal hover:text-foreground ${sortKey === "since" ? "text-up" : ""}`}
+                    className={`cursor-pointer px-2 py-1.5 text-right font-normal hover:text-foreground ${sortKey === "since" ? "text-primary" : ""}`}
                     title="当前收盘较最近一次爆量日收盘的涨跌幅 · 点击排序"
                   >
                     距爆量日
                   </th>
                   <th
                     onClick={() => setSortKey("surge")}
-                    className={`cursor-pointer px-2 py-1.5 text-left font-normal hover:text-foreground ${sortKey === "surge" ? "text-up" : ""}`}
+                    className={`cursor-pointer px-2 py-1.5 text-left font-normal hover:text-foreground ${sortKey === "surge" ? "text-primary" : ""}`}
                     title="基准日 = 窗口内最近一次爆量日 · 点击排序"
                   >
                     爆量日
                   </th>
                   <th
                     onClick={() => setSortKey("ratio")}
-                    className={`cursor-pointer px-2 py-1.5 text-right font-normal hover:text-foreground ${sortKey === "ratio" ? "text-up" : ""}`}
+                    className={`cursor-pointer px-2 py-1.5 text-right font-normal hover:text-foreground ${sortKey === "ratio" ? "text-primary" : ""}`}
                     title="基准日 20 日口径量比 · 点击排序"
                   >
                     爆量量比
@@ -202,7 +202,7 @@ export default function VolumeHoldView() {
                       <span className="num">{r.surgeDate.slice(5)}</span>
                       {r.surgeCount >= 2 && (
                         <span
-                          className="ml-1 rounded-[2px] bg-up-soft px-1 text-[10px] leading-4 text-up"
+                          className="ml-1 rounded-[2px] bg-muted px-1 text-[10px] leading-4 text-fg2"
                           title={`窗口内爆量 ${r.surgeCount} 次（峰值量比 ${r.maxVolumeRatio.toFixed(1)}）`}
                         >
                           {r.surgeCount}次
@@ -214,7 +214,7 @@ export default function VolumeHoldView() {
                     </td>
                     <td className="whitespace-nowrap px-2 py-1.5 text-center">
                       {r.surgeIsLimitUp ? (
-                        <span className="rounded-[2px] bg-up-soft px-1 text-[10px] leading-4 text-up">涨停</span>
+                        <span className="rounded-[2px] bg-muted px-1 text-[10px] leading-4 text-fg2">涨停</span>
                       ) : r.surgeIsBroken ? (
                         <span className="rounded-[2px] bg-muted px-1 text-[10px] leading-4 text-dim">炸板</span>
                       ) : (
