@@ -122,7 +122,7 @@ export default function LimitUpPool({
                 setPage(1);
               }}
               className={`rounded-[3px] px-2 py-1 text-[12px] transition-colors ${
-                active ? "bg-up-soft font-medium text-up" : "text-muted-foreground hover:bg-muted"
+                active ? "bg-sidebar-accent font-medium text-primary" : "text-muted-foreground hover:bg-muted"
               }`}
             >
               {f.label}
@@ -232,7 +232,7 @@ export default function LimitUpPool({
                   </td>
                   <td className="whitespace-nowrap px-2 py-1.5 text-center">
                     {s.isPromotion && (
-                      <span className="rounded-[2px] bg-up-soft px-1 text-[10px] leading-4 text-up">晋级</span>
+                      <span className="rounded-[2px] bg-muted px-1 text-[10px] leading-4 text-fg2">晋级</span>
                     )}
                     {s.isRebound && (
                       <span className="ml-1 rounded-[2px] bg-link-soft-bg px-1 text-[10px] leading-4 text-link-strong">反包</span>
