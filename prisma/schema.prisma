@@ -53,6 +53,10 @@ model DailyMarket {
   sealRate       Float? // 封板率 = 涨停数 / (涨停数 + 炸板数)
   dataSource     String   @default("eastmoney+qq")
   createdAt      DateTime @default(now())
+  rowOrigin    String  @default("LIVE")
+  dataQuality  String  @default("GOOD")
+  fieldVersion String  @default("live-v1")
+
 }
 
 // 3. daily_stock 每日股票行情（当前仅入库涨停/炸板/跌停相关股票的日K，避免全市场冗余）
@@ -76,6 +80,10 @@ model DailyStock {
   isBroken       Boolean @default(false) // 曾触及涨停但未封住
   @@unique([tradeDate, stockCode])
   @@index([stockCode])
+  rowOrigin    String  @default("LIVE")
+  dataQuality  String  @default("GOOD")
+  fieldVersion String  @default("live-v1")
+
 }
 
 // 4. limit_up 涨停数据
@@ -105,6 +113,11 @@ model LimitUp {
   themeEvidence  String? // JSON: 新闻归类证据 [{theme,hits,title,media,time}]（个股新闻命中主线关键词）
   @@unique([tradeDate, stockCode])
   @@index([stockCode])
+  rowOrigin    String  @default("LIVE")
+  dataQuality  String  @default("GOOD")
+  fieldVersion String  @default("live-v1")
+
+  themesNewsEnriched String?
 }
 
 // 5. board_history 连板历史（自主保留可追溯的每日状态）
@@ -120,6 +133,10 @@ model BoardHistory {
   isRebound          Boolean // 前日涨停、昨日断板、今日再涨停
   @@unique([tradeDate, stockCode])
   @@index([stockCode])
+  rowOrigin    String  @default("LIVE")
+  dataQuality  String  @default("GOOD")
+  fieldVersion String  @default("live-v1")
+
 }
 
 // 6. concept 题材表（第一版题材=行业板块，由数据源动态获取）
@@ -160,6 +177,10 @@ model DailyConcept {
   heatScore     Float? // 热度分 0-100
   members       String? // JSON: theme 行的成分股明细 [{code,name,industry,boardCount}]
   @@unique([tradeDate, conceptName, kind])
+  rowOrigin    String  @default("LIVE")
+  dataQuality  String  @default("GOOD")
+  fieldVersion String  @default("live-v1")
+
 }
 
 // 9. sentiment_daily 每日情绪
@@ -180,6 +201,10 @@ model SentimentDaily {
   sentimentStage       String // 冰点/修复/升温/高潮/极强
   upCount              Int?
   downCount            Int?
+  rowOrigin    String  @default("LIVE")
+  dataQuality  String  @default("GOOD")
+  fieldVersion String  @default("live-v1")
+
 }
 
 // 10. broken_limit 炸板股票（方案之外补充表：封板率与题材炸板统计需要明细）
@@ -200,6 +225,10 @@ model BrokenLimit {
   volumeRatio    Float? // 量比 = 当日成交量 / 前20日均量
   @@unique([tradeDate, stockCode])
   @@index([stockCode])
+  rowOrigin    String  @default("LIVE")
+  dataQuality  String  @default("GOOD")
+  fieldVersion String  @default("live-v1")
+
 }
 
 // 11. limit_down 跌停股票（方案之外补充表）
@@ -217,6 +246,10 @@ model LimitDown {
   industry       String?
   @@unique([tradeDate, stockCode])
   @@index([stockCode])
+  rowOrigin    String  @default("LIVE")
+  dataQuality  String  @default("GOOD")
+  fieldVersion String  @default("live-v1")
+
 }
 
 // 12. volume_surge 爆量榜（含非涨停标的；量比=当日成交量/20日均量，≥2 入选）
@@ -447,4 +480,14 @@ model ShadowNextDayReturn {
   @@index([tradingDay])
   @@index([ticker, tradingDay])
   @@index([exitReason])
+}
+
+model MarketRegimeTag {
+  tradeDate    String   @id
+  phase        String
+  sentimentTag String?
+  indexSlope20 Float?
+  tagVersion   String
+  createdAt    DateTime @default(now())
+  @@index([phase, tradeDate])
 }

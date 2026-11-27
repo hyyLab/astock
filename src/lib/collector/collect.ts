@@ -287,14 +287,14 @@ export async function runCollection(opts: CollectOptions = {}): Promise<CollectS
 
   // 7.2 清理旧数据（幂等）—— 所有表 tradeDate 统一为 YYYY-MM-DD 格式
   const dateStrs = windowDates;
-  dbOps.push((tx) => tx.limitUp.deleteMany({ where: { tradeDate: { in: dateStrs } } }));
-  dbOps.push((tx) => tx.brokenLimit.deleteMany({ where: { tradeDate: { in: dateStrs } } }));
-  dbOps.push((tx) => tx.limitDown.deleteMany({ where: { tradeDate: { in: dateStrs } } }));
-  dbOps.push((tx) => tx.dailyStock.deleteMany({ where: { tradeDate: { in: dateStrs } } }));
-  dbOps.push((tx) => tx.boardHistory.deleteMany({ where: { tradeDate: { in: dateStrs } } }));
-  dbOps.push((tx) => tx.dailyConcept.deleteMany({ where: { tradeDate: { in: dateStrs } } }));
-  dbOps.push((tx) => tx.sentimentDaily.deleteMany({ where: { tradeDate: { in: dateStrs } } }));
-  dbOps.push((tx) => tx.dailyMarket.deleteMany({ where: { tradeDate: { in: dateStrs } } }));
+  dbOps.push((tx) => tx.limitUp.deleteMany({ where: { tradeDate: { in: dateStrs }, rowOrigin: "LIVE" } }));
+  dbOps.push((tx) => tx.brokenLimit.deleteMany({ where: { tradeDate: { in: dateStrs }, rowOrigin: "LIVE" } }));
+  dbOps.push((tx) => tx.limitDown.deleteMany({ where: { tradeDate: { in: dateStrs }, rowOrigin: "LIVE" } }));
+  dbOps.push((tx) => tx.dailyStock.deleteMany({ where: { tradeDate: { in: dateStrs }, rowOrigin: "LIVE" } }));
+  dbOps.push((tx) => tx.boardHistory.deleteMany({ where: { tradeDate: { in: dateStrs }, rowOrigin: "LIVE" } }));
+  dbOps.push((tx) => tx.dailyConcept.deleteMany({ where: { tradeDate: { in: dateStrs }, rowOrigin: "LIVE" } }));
+  dbOps.push((tx) => tx.sentimentDaily.deleteMany({ where: { tradeDate: { in: dateStrs }, rowOrigin: "LIVE" } }));
+  dbOps.push((tx) => tx.dailyMarket.deleteMany({ where: { tradeDate: { in: dateStrs }, rowOrigin: "LIVE" } }));
 
   // 7.3 每日行情明细（DailyStock，仅池内股票）
   interface DailyStockRow {

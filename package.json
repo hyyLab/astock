@@ -8,6 +8,8 @@
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
     "collect": "bun scripts/collect-daily.ts",
+    "backfill:history": "bun scripts/backfill-history.ts",
+    "verify:history": "bun scripts/verify-history-overlap.ts",
     "health": "bun scripts/health-check.ts",
     "db:push": "prisma db push --accept-data-loss",
     "db:generate": "prisma generate",
