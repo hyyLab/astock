@@ -79,7 +79,8 @@ function promotionTrend(stats: PromotionStat[]): string {
 }
 
 function highestEligible<T extends { n: number; rate: number; bucket: string }>(stats: T[]): T | null {
-  return stats.filter((item) => item.n >= 20).sort((a, b) => b.rate - a.rate)[0] ?? null;
+  const eligible = stats.filter((item) => item.n >= 20).sort((a, b) => b.rate - a.rate);
+  return eligible.length >= 2 ? eligible[0] : null;
 }
 
 function describeObservedRange<T extends { n: number; bucket: string }>(stats: T[], getValue: (item: T) => number | null): string {
