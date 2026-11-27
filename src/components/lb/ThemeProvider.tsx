@@ -1,13 +1,22 @@
 "use client";
 
-// 主题 Provider（next-themes）：class 策略，默认深色，localStorage 记忆
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import type { ReactNode } from "react";
+import { ThemeControl } from "./ThemeControl";
+import { ASTOCK_THEME_IDS } from "./theme-config";
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   return (
-    <NextThemesProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
+    <NextThemesProvider
+      attribute="class"
+      themes={[...ASTOCK_THEME_IDS]}
+      defaultTheme="dark"
+      enableSystem={false}
+      enableColorScheme={false}
+      storageKey="astock-theme"
+    >
       {children}
+      <ThemeControl />
     </NextThemesProvider>
   );
 }
