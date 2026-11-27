@@ -252,7 +252,7 @@ export default function ConceptView() {
                                   <button
                                     key={m.stockCode}
                                     onClick={() => (location.hash = `#/stock/${m.stockCode}`)}
-                                    className="num rounded-[3px] border border-border bg-card px-2 py-1 text-[11px] text-fg2 hover:border-up-soft hover:text-up"
+                                    className="num rounded-[3px] border border-border bg-card px-2 py-1 text-[11px] text-fg2 hover:border-primary hover:text-primary"
                                     title={`行业 ${m.industry ?? "—"} · 点击查看个股`}
                                   >
                                     <span className="font-medium">{m.stockName}</span>
@@ -273,7 +273,7 @@ export default function ConceptView() {
                                     <button
                                       key={s.stockCode}
                                       onClick={() => (location.hash = `#/stock/${s.stockCode}`)}
-                                      className="num rounded-[3px] border border-border bg-card px-2 py-1 text-[11px] text-fg2 hover:border-up-soft hover:text-up"
+                                      className="num rounded-[3px] border border-border bg-card px-2 py-1 text-[11px] text-fg2 hover:border-primary hover:text-primary"
                                       title={`首封 ${s.firstLimitTime ?? "—"} · 成交额 ${s.amount ? (s.amount / 1e8).toFixed(2) : "—"}亿`}
                                     >
                                       <span className="font-medium">{s.stockName}</span>
