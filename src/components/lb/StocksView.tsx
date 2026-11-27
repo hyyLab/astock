@@ -84,7 +84,7 @@ export default function StocksView() {
                 <button
                   key={s.stockCode}
                   onClick={() => (location.hash = `#/stock/${s.stockCode}`)}
-                  className="num rounded-[3px] border border-up-soft bg-up-soft px-2 py-1 text-[12px] text-fg2 hover:bg-card"
+                  className="num rounded-[3px] border border-border bg-muted px-2 py-1 text-[12px] text-fg2 hover:bg-card"
                 >
                   <span className="font-medium">{s.stockName}</span>
                   <span className="ml-1 text-up">{s.boardCount}板</span>
