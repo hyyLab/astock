@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Activity,
   CandlestickChart,
@@ -128,14 +128,21 @@ export default function Home() {
   const [collapsed, setCollapsed] = useState(false);
   const [activeGroupId, setActiveGroupId] = useState("market");
   const [activeItemId, setActiveItemId] = useState("market-overview");
+  const pendingNavigation = useRef<{ groupId: string; itemId: string } | null>(null);
 
   useEffect(() => {
     const onHash = () => {
       const nextRoute = parseHash(window.location.hash);
       setRoute(nextRoute);
-      const group = groupForRoute(nextRoute);
+      const pending = pendingNavigation.current;
+      const pendingGroup = pending ? NAV_GROUPS.find((group) => group.id === pending.groupId) : undefined;
+      const pendingItem = pendingGroup?.items.find((item) => item.id === pending?.itemId);
+      const usePending = Boolean(pendingItem?.views.includes(nextRoute.view));
+      const group = usePending && pendingGroup ? pendingGroup : groupForRoute(nextRoute);
+      const item = usePending && pendingItem ? pendingItem : itemForRoute(group, nextRoute);
+      pendingNavigation.current = null;
       setActiveGroupId(group.id);
-      setActiveItemId(itemForRoute(group, nextRoute).id);
+      setActiveItemId(item.id);
     };
     onHash();
     window.addEventListener("hashchange", onHash);
@@ -147,7 +154,10 @@ export default function Home() {
   const selectItem = (group: NavGroup, item: NavItem) => {
     setActiveGroupId(group.id);
     setActiveItemId(item.id);
-    if (window.location.hash !== item.hash) window.location.hash = item.hash;
+    if (window.location.hash !== item.hash) {
+      pendingNavigation.current = { groupId: group.id, itemId: item.id };
+      window.location.hash = item.hash;
+    }
   };
 
   const selectGroup = (group: NavGroup) => {
