@@ -128,7 +128,7 @@ export default function SentimentCycle({ bundle }: { bundle: ReviewBundle }) {
           <div className="flex text-[10px] text-dim">
             {SEGMENTS.map((seg) => (
               <div key={seg.label} style={{ width: `${seg.to - seg.from}%` }} className="flex items-center gap-1">
-                <span className="h-1 w-1 rounded-full" style={{ backgroundColor: dark ? seg.colorDark : seg.color }} />
+                <span className="h-1 w-1 rounded-full" style={{ backgroundColor: seg.colorDark }} />
                 {seg.label}
               </div>
             ))}
