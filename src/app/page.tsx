@@ -170,20 +170,20 @@ export default function Home() {
       <aside
         className={[
           "sticky top-0 flex h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200",
-          collapsed ? "w-[68px]" : "w-[232px]",
+          collapsed ? "w-[72px]" : "w-[248px]",
         ].join(" ")}
       >
-        <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-3">
+        <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
           <button
             type="button"
             onClick={() => selectItem(NAV_GROUPS[0], NAV_GROUPS[0].items[0])}
             className="flex min-w-0 items-center gap-2.5 text-left"
             aria-label="返回大盘总览"
           >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[4px] bg-primary text-[12px] font-bold text-primary-foreground">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#34434D] bg-[#18232B] text-[14px] font-bold text-primary">
               A
             </span>
-            {!collapsed && <span className="truncate text-[14px] font-semibold tracking-wide">ASTOCK</span>}
+            {!collapsed && <span className="truncate text-[14px] font-semibold tracking-[0.14em]">ASTOCK</span>}
           </button>
           <button
             type="button"
@@ -196,8 +196,8 @@ export default function Home() {
           </button>
         </div>
 
-        <nav className="lb-scroll flex-1 space-y-1 overflow-y-auto px-2 py-3" aria-label="主导航">
-          {!collapsed && <div className="px-2 pb-2 text-[10px] font-semibold tracking-[0.16em] text-dim">WORKSPACE</div>}
+        <nav className="lb-scroll flex-1 space-y-2 overflow-y-auto px-3 py-5" aria-label="主导航">
+          {!collapsed && <div className="px-3 pb-3 text-[10px] font-semibold tracking-[0.18em] text-dim">WORKSPACE</div>}
           {NAV_GROUPS.map((group) => {
             const selected = activeGroup.id === group.id;
             const Icon = group.icon;
@@ -209,7 +209,7 @@ export default function Home() {
                 aria-current={selected ? "page" : undefined}
                 title={collapsed ? group.label : undefined}
                 className={[
-                  "flex w-full items-center gap-3 rounded-[6px] px-2.5 py-2 text-left text-[13px] transition-colors",
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-[13px] transition-colors",
                   selected ? "bg-sidebar-accent font-medium text-primary" : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground",
                   collapsed ? "justify-center px-0" : "",
                 ].join(" ")}
@@ -222,7 +222,7 @@ export default function Home() {
           })}
         </nav>
 
-        <div className="border-t border-sidebar-border px-3 py-3">
+        <div className="border-t border-sidebar-border px-4 py-4">
           {!collapsed ? (
             <>
               <div className="text-[10px] font-medium tracking-wide text-dim">MARKET WORKSPACE</div>
@@ -234,18 +234,18 @@ export default function Home() {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col bg-background">
         <Header route={route} navigation={false} />
-        <main className="mx-auto w-full max-w-[1680px] flex-1 px-4 py-5 md:px-6">
-          <div className="mb-5 flex flex-col gap-3 border-b border-border pb-4 xl:flex-row xl:items-end xl:justify-between">
+        <main className="mx-auto w-full max-w-[1800px] flex-1 px-5 py-7 md:px-8 md:py-9 xl:px-10">
+          <div className="mb-8 flex flex-col gap-5 border-b border-border pb-6 xl:flex-row xl:items-end xl:justify-between">
             <div className="min-w-0">
-              <div className="mb-1 flex items-center gap-2 text-[11px] text-dim">
+              <div className="mb-2 flex items-center gap-2 text-[10px] font-semibold tracking-[0.16em] text-dim">
                 <span>ASTOCK</span><span className="text-dim2">/</span><span>{activeGroup.label}</span>
               </div>
-              <h1 className="text-[22px] font-semibold tracking-tight">{activeGroup.label}</h1>
-              <p className="mt-1 text-[12px] text-muted-foreground">{activeGroup.description}</p>
+              <h1 className="text-[30px] font-semibold tracking-tight md:text-[34px]">{activeGroup.label}</h1>
+              <p className="mt-2 text-[13px] text-muted-foreground">{activeGroup.description}</p>
             </div>
-            <div className="lb-scroll flex max-w-full items-center gap-1 overflow-x-auto" role="tablist" aria-label={activeGroup.label + "二级导航"}>
+            <div className="lb-scroll flex max-w-full items-center gap-2 overflow-x-auto" role="tablist" aria-label={activeGroup.label + "二级导航"}>
               {activeGroup.items.map((item) => {
                 const selected = activeItemId === item.id;
                 return (
@@ -257,8 +257,8 @@ export default function Home() {
                     title={item.hint}
                     onClick={() => selectItem(activeGroup, item)}
                     className={[
-                      "shrink-0 border-b-2 px-3 py-2 text-[13px] transition-colors",
-                      selected ? "border-primary font-medium text-primary" : "border-transparent text-muted-foreground hover:text-foreground",
+                      "shrink-0 border-b-2 px-3 py-3 text-[13px] transition-colors",
+                      selected ? "border-primary font-semibold text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
                     ].join(" ")}
                   >
                     {item.label}
@@ -286,7 +286,7 @@ export default function Home() {
         </main>
 
         <footer className="mt-auto border-t border-border bg-card">
-          <div className="mx-auto flex w-full max-w-[1680px] flex-col items-center justify-between gap-1.5 px-4 py-3 text-[11px] text-dim md:flex-row md:px-6">
+          <div className="mx-auto flex w-full max-w-[1800px] flex-col items-center justify-between gap-1.5 px-5 py-4 text-[11px] text-dim md:flex-row md:px-8 xl:px-10">
             <span>ASTOCK · A 股结构化市场复盘工作台</span>
             <span>数据仅供学习研究，不构成任何投资建议</span>
           </div>
