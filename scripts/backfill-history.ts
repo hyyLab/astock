@@ -35,7 +35,7 @@ async function main(){
  for(const d of ruleDates)rosters.set(d,{zt:new Set<string>(),zb:new Set<string>(),dt:new Set<string>()});
  console.log("[backfill] codes="+stocks.length+" target="+target[0]+".."+target[target.length-1]+" seed="+seed.length+" dry="+dry);
  const results=await pmap(stocks,4,async stock=>{try{return {stock,em:await emBars(stock),qq:await fetchDailyKline(stock.stockCode,320),error:null};}catch(e){return {stock,em:[],qq:[],error:String(e)};}});
- const barsByCode=new Map<string,any[]>(),barIndexByCode=new Map<string,Map<string,number>>(),validDatesByCode=new Map<string,Set<string>>(),names=new Map(stocks.map(s=>[s.stockCode,s.stockName] as const));
+ const barsByCode=new Map<string,any[]>(),barIndexByCode=new Map<string,Map<string,number>>(),names=new Map(stocks.map(s=>[s.stockCode,s.stockName] as const));
  let failed=0,priceMismatch=0,corporateInvalid=0,listingSkipped=0;
  for(const x of results){
   if(x.error||!x.em.length||!x.qq.length){failed++;continue;}
@@ -50,7 +50,6 @@ async function main(){
   }
   barsByCode.set(x.stock.stockCode,bars);
   barIndexByCode.set(x.stock.stockCode,new Map(bars.map((b:any,i:number)=>[b.date,i] as const)));
-  validDatesByCode.set(x.stock.stockCode,validDates);
   const listingDate=x.stock.listingDate?ymd(String(x.stock.listingDate).slice(0,10)):"";
   let listingSkipStart=-1;
   if(listingDate&&listingDate>=ymd(ruleDates[0])&&listingDate<=ymd(ruleDates[ruleDates.length-1])){
@@ -96,6 +95,7 @@ async function main(){
   const sent=calcSentiment({limitUpCount:r.zt.size,limitDownCount:r.dt.size,brokenCount:r.zb.size,highestBoard:highest,yesterdayLimitAvg:yavg,upCount:null,downCount:null});
   const stageIndex=sentimentStages.indexOf(sent.stage as typeof sentimentStages[number]);
   if(stageIndex<0)throw Error("Unknown calcSentiment stage: "+sent.stage);
+  const regimeTag=regimeStages[stageIndex];if(!regimeTag)throw Error("No regime mapping for calcSentiment stage: "+sent.stage);
   sd.push({tradeDate:d,limitUpCount:r.zt.size,limitDownCount:r.dt.size,brokenLimitCount:r.zb.size,sealRate:sealRateOf(r.zt.size,r.zb.size),brokenRate:brokenRateOf(r.zt.size,r.zb.size),highestBoard:highest,yesterdayLimitAvg:yavg,yesterdayCount:prevReturns.length,yesterdayRedCount:prevReturns.filter(x=>x>0).length,promotionDetails:JSON.stringify(chain.promotionsByDate.get(d)||[]),sentimentTemperature:sent.temperature,sentimentStage:sent.stage,upCount:null,downCount:null,rowOrigin:"BACKFILL",dataQuality:"MISSING",fieldVersion:"history-v2"});
   const idx=index.bars.findIndex(b=>b.date===d),ib=index.bars[idx],ip=index.bars[idx-1];
   const sz=indexBar("399001",d),cy=indexBar("399006",d),kc=indexBar("000688",d),sz50=indexBar("000016",d),bz50=indexBar("899050",d),szcomp=indexBar("399106",d);
@@ -106,7 +106,7 @@ async function main(){
   for(const c of buildConceptStats(inputs,[...r.zb].map(code=>({industry:byCode.get(code)?.industry||""}))))dc.push({tradeDate:d,...c,kind:"industry",rowOrigin:"BACKFILL",dataQuality:"MISSING",fieldVersion:"history-v2"});
   for(const t of buildThemeStats(inputs)){const o:any={...t};delete o.members;dc.push({tradeDate:d,...o,kind:"theme",members:JSON.stringify(t.members),rowOrigin:"BACKFILL",dataQuality:"MISSING",fieldVersion:"history-v2"});}
   const win=index.bars.filter(b=>b.date<=d).slice(-20),slope=win.length===20?win[19].close/win[0].close-1:null,phase=slope===null?"UNKNOWN":slope>.03?"TREND":slope<-.03?"WEAK":"RANGE";
-  reg.push({tradeDate:d,phase,sentimentTag:regimeStages[stageIndex],indexSlope20:slope,tagVersion:"v1"});
+  reg.push({tradeDate:d,phase,sentimentTag:regimeTag,indexSlope20:slope,tagVersion:"v1"});
  }
  const summary={barCount:[...barsByCode.values()].reduce((n,b)=>n+b.length,0),dailyStock:ds.length,limitUp:lu.length,broken:zb.length,limitDown:dt.length,failedStocks:failed,priceMismatch,corporateInvalid,listingSkipped,dates:target.length};
  console.log("[backfill] summary",summary);
