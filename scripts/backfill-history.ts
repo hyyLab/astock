@@ -115,21 +115,27 @@ async function main(){
  const preserveLiveFrom=target[Math.max(0,target.length-63)];
  for(const days of chunks(target,10))await db.$transaction(async tx=>{
   const canonicalDays=days.filter(d=>d<preserveLiveFrom);
+  const assertCoverage=async(model:any,rows:any[],fields:string[],origin:"LIVE"|"BACKFILL",scopeDays:string[])=>{
+   const existing=await model.findMany({where:{tradeDate:{in:scopeDays},rowOrigin:origin},select:Object.fromEntries(fields.map(field=>[field,true]))});
+   const replacementKeys=new Set(rows.map(row=>JSON.stringify(fields.map(field=>row[field]??null))));
+   const missing=existing.filter((row:any)=>!replacementKeys.has(JSON.stringify(fields.map(field=>row[field]??null))));
+   if(missing.length)throw Error("Refusing "+origin+" deletion: replacement missing for "+fields.join(",")+"; sample="+JSON.stringify(missing.slice(0,5)));
+  };
+  const assertAllCoverage=async(origin:"LIVE"|"BACKFILL",scopeDays:string[])=>{
+   if(!scopeDays.length)return;
+   await assertCoverage(tx.dailyStock,ds,["tradeDate","stockCode"],origin,scopeDays);
+   await assertCoverage(tx.limitUp,lu,["tradeDate","stockCode"],origin,scopeDays);
+   await assertCoverage(tx.brokenLimit,zb,["tradeDate","stockCode"],origin,scopeDays);
+   await assertCoverage(tx.limitDown,dt,["tradeDate","stockCode"],origin,scopeDays);
+   await assertCoverage(tx.boardHistory,bh,["tradeDate","stockCode"],origin,scopeDays);
+   await assertCoverage(tx.dailyConcept,dc,["tradeDate","conceptName","kind"],origin,scopeDays);
+   await assertCoverage(tx.sentimentDaily,sd,["tradeDate"],origin,scopeDays);
+   await assertCoverage(tx.dailyMarket,dm,["tradeDate"],origin,scopeDays);
+  };
+  // 先确认待重写的 BACKFILL 行也都有替代项，避免源数据暂时缺失时删掉上一轮成功结果。
+  await assertAllCoverage("BACKFILL",days);
   if(canonicalDays.length){
-   const assertLiveCoverage=async(model:any,rows:any[],fields:string[])=>{
-    const existing=await model.findMany({where:{tradeDate:{in:canonicalDays},rowOrigin:"LIVE"},select:Object.fromEntries(fields.map(field=>[field,true]))});
-    const replacementKeys=new Set(rows.map(row=>JSON.stringify(fields.map(field=>row[field]??null))));
-    const missing=existing.filter((row:any)=>!replacementKeys.has(JSON.stringify(fields.map(field=>row[field]??null))));
-    if(missing.length)throw Error("Refusing LIVE deletion: BACKFILL replacement missing for "+fields.join(",")+"; sample="+JSON.stringify(missing.slice(0,5)));
-   };
-   await assertLiveCoverage(tx.dailyStock,ds,["tradeDate","stockCode"]);
-   await assertLiveCoverage(tx.limitUp,lu,["tradeDate","stockCode"]);
-   await assertLiveCoverage(tx.brokenLimit,zb,["tradeDate","stockCode"]);
-   await assertLiveCoverage(tx.limitDown,dt,["tradeDate","stockCode"]);
-   await assertLiveCoverage(tx.boardHistory,bh,["tradeDate","stockCode"]);
-   await assertLiveCoverage(tx.dailyConcept,dc,["tradeDate","conceptName","kind"]);
-   await assertLiveCoverage(tx.sentimentDaily,sd,["tradeDate"]);
-   await assertLiveCoverage(tx.dailyMarket,dm,["tradeDate"]);
+   await assertAllCoverage("LIVE",canonicalDays);
    const old={tradeDate:{in:canonicalDays},rowOrigin:"LIVE"};
    await tx.dailyStock.deleteMany({where:old});await tx.limitUp.deleteMany({where:old});await tx.brokenLimit.deleteMany({where:old});await tx.limitDown.deleteMany({where:old});
    await tx.boardHistory.deleteMany({where:old});await tx.dailyConcept.deleteMany({where:old});await tx.sentimentDaily.deleteMany({where:old});await tx.dailyMarket.deleteMany({where:old});
