@@ -118,6 +118,20 @@ async function main(){
  if(dry){console.log("[backfill] dry-run performed zero writes");if(failed>0)console.warn("[backfill] formal run would be refused because at least one stock fetch failed");return;}
  if(failed>0)throw Error("Real stock fetch/source failures detected; refusing writes to protect existing LIVE canonical rows. See failed stock details above.");
  const preserveLiveFrom=target[Math.max(0,target.length-63)];
+ const canonicalDates=target.filter(d=>d<preserveLiveFrom);
+ // 先做只读 LIVE 覆盖预检；任何一张表缺替代项，都在清理旧 BACKFILL 前终止。
+ if(canonicalDates.length)await db.$transaction(async tx=>{
+  const check=async(model:any,rows:any[],fields:string[])=>{
+   const existing=await model.findMany({where:{tradeDate:{in:canonicalDates},rowOrigin:"LIVE"},select:Object.fromEntries(fields.map(field=>[field,true]))});
+   const keys=new Set(rows.map(row=>JSON.stringify(fields.map(field=>row[field]??null))));
+   const missing=existing.filter((row:any)=>!keys.has(JSON.stringify(fields.map(field=>row[field]??null))));
+   if(missing.length)throw Error("LIVE coverage preflight failed for "+fields.join(",")+"; sample="+JSON.stringify(missing.slice(0,5)));
+  };
+  await check(tx.dailyStock,ds,["tradeDate","stockCode"]);await check(tx.limitUp,lu,["tradeDate","stockCode"]);
+  await check(tx.brokenLimit,zb,["tradeDate","stockCode"]);await check(tx.limitDown,dt,["tradeDate","stockCode"]);
+  await check(tx.boardHistory,bh,["tradeDate","stockCode"]);await check(tx.sentimentDaily,sd,["tradeDate"]);
+  await check(tx.dailyMarket,dm,["tradeDate"]);
+ },{timeout:120000});
  // 全量清理本次请求区间内的旧 BACKFILL 世代，再按本次统一计算结果重建。
  // target 即使在 63/120/180/220 天之间扩展或滑动，也不会遗留窗口外的旧 BACKFILL 行。
  const backfillRange={tradeDate:{gte:start,lte:end},rowOrigin:"BACKFILL"};
@@ -126,7 +140,7 @@ async function main(){
   await tx.brokenLimit.deleteMany({where:backfillRange});await tx.limitDown.deleteMany({where:backfillRange});
   await tx.boardHistory.deleteMany({where:backfillRange});await tx.dailyConcept.deleteMany({where:backfillRange});
   await tx.sentimentDaily.deleteMany({where:backfillRange});await tx.dailyMarket.deleteMany({where:backfillRange});
-  await tx.marketRegimeTag.deleteMany({where:{tradeDate:{gte:start,lte:end}}});
+  await tx.marketRegimeTag.deleteMany({where:{tradeDate:{in:target}}});
  },{timeout:120000});
  for(const days of chunks(target,10))await db.$transaction(async tx=>{
   const canonicalDays=days.filter(d=>d<preserveLiveFrom);
