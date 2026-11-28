@@ -132,6 +132,19 @@ async function main(){
   await check(tx.boardHistory,bh,["tradeDate","stockCode"]);await check(tx.sentimentDaily,sd,["tradeDate"]);
   await check(tx.dailyMarket,dm,["tradeDate"]);
  },{timeout:120000});
+ // 先检查旧 BACKFILL 是否都有本次替代项，避免部分源数据导致覆盖成功历史。
+ await db.$transaction(async tx=>{
+  const verify=async(model:any,rows:any[],fields:string[])=>{
+   const oldRows=await model.findMany({where:{tradeDate:{in:target},rowOrigin:"BACKFILL"},select:Object.fromEntries(fields.map(field=>[field,true]))});
+   const keys=new Set(rows.map(row=>JSON.stringify(fields.map(field=>row[field]??null))));
+   const missing=oldRows.filter((row:any)=>!keys.has(JSON.stringify(fields.map(field=>row[field]??null))));
+   if(missing.length)throw Error("BACKFILL replacement check failed: "+fields.join(",")+" "+JSON.stringify(missing.slice(0,5)));
+  };
+  await verify(tx.dailyStock,ds,["tradeDate","stockCode"]);await verify(tx.limitUp,lu,["tradeDate","stockCode"]);
+  await verify(tx.brokenLimit,zb,["tradeDate","stockCode"]);await verify(tx.limitDown,dt,["tradeDate","stockCode"]);
+  await verify(tx.boardHistory,bh,["tradeDate","stockCode"]);await verify(tx.dailyConcept,dc,["tradeDate","conceptName","kind"]);
+  await verify(tx.sentimentDaily,sd,["tradeDate"]);await verify(tx.dailyMarket,dm,["tradeDate"]);
+ },{timeout:120000});
  // 全量清理本次请求区间内的旧 BACKFILL 世代，再按本次统一计算结果重建。
  // target 即使在 63/120/180/220 天之间扩展或滑动，也不会遗留窗口外的旧 BACKFILL 行。
  const backfillRange={tradeDate:{gte:start,lte:end},rowOrigin:"BACKFILL"};
