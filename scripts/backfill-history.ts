@@ -20,7 +20,7 @@ async function emBars(stock:any){
 }
 function pctOf(b:any,p:any){return round((b.close/p.close-1)*100);}
 async function main(){
- const [stocks,index]=await Promise.all([db.stockBasic.findMany({select:{stockCode:true,stockName:true,industry:true,listingDate:true},orderBy:{stockCode:"asc"}}),fetchIndexKline("sh000001",321)]);
+ const [stocks,index]=await Promise.all([db.stockBasic.findMany({select:{stockCode:true,stockName:true,industry:true,listingDate:true,status:true},orderBy:{stockCode:"asc"}}),fetchIndexKline("sh000001",321)]);
  const indexSeries=await Promise.all(["sz399001","sz399006","sh000688","sh000016","bj899050","sz399106"].map(code=>fetchIndexKline(code,321)));
  const indexMaps=new Map(indexSeries.map(x=>[x.code,new Map(x.bars.map(b=>[b.date,b] as const))] as const));
  const indexBar=(code:string,date:string)=>indexMaps.get(code)?.get(date);
@@ -37,10 +37,10 @@ async function main(){
  const results=await pmap(stocks,4,async stock=>{try{return {stock,em:await emBars(stock),qq:await fetchDailyKline(stock.stockCode,321),error:null};}catch(e){return {stock,em:[],qq:[],error:String(e)};}});
  const barsByCode=new Map<string,any[]>(),barIndexByCode=new Map<string,Map<string,number>>(),names=new Map(stocks.map(s=>[s.stockCode,s.stockName] as const));
  let failed=0,noHistory=0,priceMismatch=0,corporateInvalid=0,listingSkipped=0;
- const failedDetails:{stockCode:string;stockName:string;reason:string}[]=[],noHistoryDetails:{stockCode:string;stockName:string}[]=[];
+ const failedDetails:{stockCode:string;stockName:string;reason:string}[]=[],noHistoryDetails:{stockCode:string;stockName:string;status:string;listingDate:string|null;classification:"not-yet-listed"|"inactive-status"|"unclassified"}[]=[];\n const inactiveStatuses=new Set(["delisted","suspended","inactive","退市","停牌"]);let noHistoryUnclassified=0;
  for(const x of results){
   if(x.error){failed++;failedDetails.push({stockCode:x.stock.stockCode,stockName:x.stock.stockName,reason:x.error});continue;}
-  if(!x.em.length&&!x.qq.length){noHistory++;noHistoryDetails.push({stockCode:x.stock.stockCode,stockName:x.stock.stockName});continue;}
+  if(!x.em.length&&!x.qq.length){\n   noHistory++;const status=String(x.stock.status??"").trim().toLowerCase(),listingDate=x.stock.listingDate?String(x.stock.listingDate).slice(0,10):null;\n   const classification: "not-yet-listed"|"inactive-status"|"unclassified" = listingDate&&listingDate>end?"not-yet-listed":inactiveStatuses.has(status)?"inactive-status":"unclassified";\n   if(classification==="unclassified")noHistoryUnclassified++;\n   noHistoryDetails.push({stockCode:x.stock.stockCode,stockName:x.stock.stockName,status:status||"(empty)",listingDate,classification});continue;\n  }
   if(!x.em.length||!x.qq.length){failed++;failedDetails.push({stockCode:x.stock.stockCode,stockName:x.stock.stockName,reason:!x.em.length?"Eastmoney returned no bars while Tencent returned bars":"Tencent returned no bars while Eastmoney returned bars"});continue;}
   const qq=new Map(x.qq.map((b:any)=>[b.date,b] as const)),bars=x.em;
   const validDates=new Set<string>();
@@ -111,12 +111,12 @@ async function main(){
   const win=index.bars.filter(b=>b.date<=d).slice(-20),slope=win.length===20?win[19].close/win[0].close-1:null,phase=slope===null?"UNKNOWN":slope>.03?"TREND":slope<-.03?"WEAK":"RANGE";
   reg.push({tradeDate:d,phase,sentimentTag:regimeTag,indexSlope20:slope,tagVersion:"v1"});
  }
- const summary={barCount:[...barsByCode.values()].reduce((n,b)=>n+b.length,0),dailyStock:ds.length,limitUp:lu.length,broken:zb.length,limitDown:dt.length,failedStocks:failed,noHistoryStocks:noHistory,priceMismatch,corporateInvalid,listingSkipped,dates:target.length};
+ const summary={barCount:[...barsByCode.values()].reduce((n,b)=>n+b.length,0),dailyStock:ds.length,limitUp:lu.length,broken:zb.length,limitDown:dt.length,failedStocks:failed,noHistoryStocks:noHistory,noHistoryUnclassified,priceMismatch,corporateInvalid,listingSkipped,dates:target.length};
  console.log("[backfill] summary",summary);
  if(failedDetails.length)console.error("[backfill] failed stock details",failedDetails);
- if(noHistoryDetails.length)console.warn("[backfill] no-history stocks (not treated as fetch failures)",noHistoryDetails);
+ if(noHistoryDetails.length)console.warn("[backfill] no-history stocks",noHistoryDetails);\n if(noHistoryUnclassified>0)console.error("[backfill] no-history assertion failed: stocks have no bars but are not explicitly inactive or listed after the requested end date");
  if(dry){console.log("[backfill] dry-run performed zero writes");if(failed>0)console.warn("[backfill] formal run would be refused because at least one stock fetch failed");return;}
- if(failed>0)throw Error("Real stock fetch/source failures detected; refusing writes to protect existing LIVE canonical rows. See failed stock details above.");
+ if(failed>0)throw Error("Real stock fetch/source failures detected; refusing writes to protect existing LIVE canonical rows. See failed stock details above.");\n if(noHistoryUnclassified>0)throw Error("No-history assertion failed: "+noHistoryUnclassified+" stocks have no bars but are not explicitly delisted/suspended/inactive and were already listed by the requested end date. See details above.");
  const preserveLiveFrom=target[Math.max(0,target.length-63)];
  const canonicalDates=target.filter(d=>d<preserveLiveFrom);
  // 先做只读 LIVE 覆盖预检；任何一张表缺替代项，都在清理旧 BACKFILL 前终止。
